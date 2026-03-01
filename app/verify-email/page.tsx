@@ -79,9 +79,6 @@ export default function VerifyEmailPage() {
                 className="bg-green-600 hover:bg-green-700"
               >
                 Go to Feed
-              </Button>,
-              <Button key="home" onClick={() => router.push('/')}>
-                Back to Home
               </Button>
             ]}
           />
@@ -128,7 +125,7 @@ export default function VerifyEmailPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <Link href="/" className="inline-block">
-            <h1 className="text-3xl font-serif font-bold text-gray-900">BlogSpace</h1>
+            <h1 className="text-3xl font-serif font-bold text-gray-900">Tottho Vandar</h1>
           </Link>
         </div>
       </div>

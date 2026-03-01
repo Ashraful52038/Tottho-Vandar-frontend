@@ -99,7 +99,7 @@ export const signup = createAsyncThunk(
             const response = await authService.signup({ name, email, password });
             return response;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Signup Failed');
+            return rejectWithValue(error);
         }
     }
 );
@@ -234,8 +234,13 @@ const authSlice = createSlice({
             })
             .addCase(signup.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.payload as string;
-                message.error(action.payload as string);
+                
+                const err = action.payload as any;
+                
+                // সিম্পল - error property থাকলে সেটা নিন, না হলে default
+                state.error = err?.error || err?.message || 'Signup failed';
+                
+                message.error(state.error);
             })
 
             // Verify Email

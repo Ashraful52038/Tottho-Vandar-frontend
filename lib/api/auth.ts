@@ -34,8 +34,12 @@ export const authService = {
     },
 
     signup: async (data: SignupData): Promise<MessageResponse> => {
-        const response = await axiosInstance.post('/auth/register', data);
-        return response.data;
+        try {
+            const response = await axiosInstance.post('/auth/register', data);
+            return response.data;
+        } catch (error: any) {
+            throw error.response?.data;
+        }
     },
 
     verifyEmail: async (token:string): Promise<MessageResponse> => {

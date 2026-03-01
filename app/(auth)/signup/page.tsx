@@ -1,127 +1,215 @@
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
-import { signup } from '@/store/slices/authSlice';
+import { clearError, signup } from '@/store/slices/authSlice';
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
-import { Button, Card, Form, Input, message, Typography } from "antd";
+import { Alert, Button, Card, Form, Input, message, Typography } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from 'react';
 
 const { Title, Text } = Typography;
 
-export default function SignupPage(){
+export default function SignupPage() {
     const router = useRouter();
     const dispatch = useAppDispatch();
-    const { isLoading, error, isAuthenticated, user } = useAppSelector((state)=> state.auth);
+    const { isLoading, error, isAuthenticated, user } = useAppSelector((state) => state.auth);
+    const [form] = Form.useForm();
+
+    // Error clear when component unmounts
+    useEffect(() => {
+        return () => {
+            dispatch(clearError());
+        };
+    }, [dispatch]);
 
     // Redirect if already authenticated
     useEffect(() => {
         if (isAuthenticated && user) {
-            if (user.verified) {
-                router.push('/feed');
-            } else {
-                router.push('/verify-email');
-            }
+            router.push(user.verified ? '/feed' : '/verify-email');
         }
     }, [isAuthenticated, user, router]);
 
-
     const onFinish = async (values: any) => {
-    try {
-        const resultAction = await dispatch(signup({
-        name: values.name,
-        email: values.email,
-        password: values.password
-        })).unwrap();
-        
-        // Success
-        message.success('Account created! Please verify your email.');
-        router.push('/verify-email');
-    } catch (err) {
-        console.error('Signup failed:', err);
-        // Error already shown in message
-    }
+        try {
+            await dispatch(signup({
+                name: values.name,
+                email: values.email,
+                password: values.password
+            })).unwrap();
+
+            // Success
+            message.success('Account created! Please verify your email.');
+            router.push('/verify-email');
+        } catch (err: any) {
+            const errorMsg = typeof err === 'string' ? err : err?.message || '';
+            if (errorMsg.toLowerCase().includes('already exists')) {
+                form.setFields([
+                    {
+                        name: 'email',
+                        errors: ['This email is already registered. Please login or use another email.']
+                    }
+                ]);
+            }
+        }
     };
 
     return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
-        <Card className="w-full max-w-md shadow-lg">
-            <div className="text-center mb-8">
-                <Title level={2}>New Account</Title>
-                <Text type="secondary">Add on Treasure of Information</Text>
-            </div>
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+            <Card className="w-full max-w-md shadow-lg dark:bg-gray-800 dark:border-gray-700">
+                <div className="text-center mb-8">
+                    <Title level={2} className="dark:text-white">Create New Account</Title>
+                    <Text type="secondary" className="dark:text-gray-400">
+                        Join Tottho Vandar - Treasure of Information
+                    </Text>
+                </div>
 
-            <Form
-                name="signup"
-                onFinish={onFinish}
-                layout="vertical"
-                size="large"
-            >
-            <Form.Item
-                name="name"
-                rules={[{ required: true, message:"Enter your name"}]}
-            >
-                <Input prefix={<UserOutlined />} placeholder="Enter your name" />
-            </Form.Item>
-
-            <Form.Item
-            name="email"
-            rules={[
-                { required: true, message: 'Enter your email' },
-                { type: 'email', message: 'Enter a valid email' }
-            ]}
-            >
-                <Input prefix={<MailOutlined />} placeholder="email" />
-            </Form.Item>
-
-            <Form.Item
-                name="password"
-                rules={[
-                    { required: true, message: 'Enter your password' },
-                    { min: 6, message: 'Password must be at least 6 character' }
-                ]}
-                >
-                <Input.Password prefix={<LockOutlined />} placeholder="password" />
-            </Form.Item>
-
-            <Form.Item
-                name="confirmPassword"
-                dependencies={['password']}
-                rules={[
-                    { required: true, message: 'Confirm password' },
-                    ({ getFieldValue }) => ({
-                    validator(_, value) {
-                        if (!value || getFieldValue('password') === value) {
-                        return Promise.resolve();
-                        }
-                        return Promise.reject(new Error('Password do not match'));
-                    },
-                    }),
-                ]}
-                >
-                <Input.Password prefix={<LockOutlined />} placeholder="Confirm password" />
-            </Form.Item>
+                {/* Error Alert */}
                 {error && (
-            <div className="text-red-500 text-sm mb-4">{error}</div>
-            )}
+                    <Alert
+                        message="Registration Failed"
+                        description={typeof error === 'string' ? error : 'Please try again '}
+                        type="error"
+                        showIcon
+                        closable
+                        onClose={() => dispatch(clearError())}
+                        className="mb-4"
+                    />
+                )}
 
-            <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={isLoading}>
-                Sign Up
-            </Button>
-            </Form.Item>
+                <Form
+                    form={form}
+                    name="signup"
+                    onFinish={onFinish}
+                    layout="vertical"
+                    size="large"
+                    autoComplete="off"
+                >
+                    <Form.Item
+                        name="name"
+                        rules={[
+                            { required: true, message: "Please enter your name" },
+                            { min: 2, message: "Name must be at least 2 characters" },
+                            { max: 50, message: "Name must be less than 50 characters" }
+                        ]}
+                    >
+                        <Input
+                            prefix={<UserOutlined className="text-gray-400" />}
+                            placeholder="Full Name"
+                            className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                            autoComplete="name"
+                        />
+                    </Form.Item>
 
-            <div className="text-center">
-            <Text type="secondary">
-                Already have an account?{' '}
-                <Link href="/login" className="text-blue-500">
-                Log In
-                </Link>
-            </Text>
-            </div>
-            </Form>
-        </Card>
+                    <Form.Item
+                        name="email"
+                        rules={[
+                            { required: true, message: 'Please enter your email' },
+                            { type: 'email', message: 'Please enter a valid email address' }
+                        ]}
+                        validateTrigger="onBlur"
+                    >
+                        <Input
+                            prefix={<MailOutlined className="text-gray-400" />}
+                            placeholder="Email Address"
+                            className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                            autoComplete="email"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="password"
+                        rules={[
+                            { required: true, message: 'Please enter your password' },
+                            { min: 6, message: 'Password must be at least 6 characters' },
+                            {
+                                pattern: /^(?=.*[A-Za-z])(?=.*\d)/,
+                                message: 'Password must contain at least one letter and one number',
+                            }
+                        ]}
+                    >
+                        <Input.Password
+                            prefix={<LockOutlined className="text-gray-400" />}
+                            placeholder="Password"
+                            className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                            autoComplete="new-password"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="confirmPassword"
+                        dependencies={['password']}
+                        rules={[
+                            { required: true, message: 'Please confirm your password' },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue('password') === value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error('Passwords do not match'));
+                                },
+                            }),
+                        ]}
+                    >
+                        <Input.Password
+                            prefix={<LockOutlined className="text-gray-400" />}
+                            placeholder="Confirm Password"
+                            className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                            autoComplete="new-password"
+                        />
+                    </Form.Item>
+
+                    {/* Password strength indicator */}
+                    <Form.Item shouldUpdate>
+                        {() => {
+                            const password = form.getFieldValue('password');
+                            if (!password) return null;
+
+                            const hasLetter = /[A-Za-z]/.test(password);
+                            const hasNumber = /\d/.test(password);
+                            const isLongEnough = password.length >= 6;
+
+                            return (
+                                <div className="mb-4 text-xs space-y-1">
+                                    <div className={`flex items-center gap-1 ${hasLetter ? 'text-green-600' : 'text-gray-400'}`}>
+                                        <span className="text-lg">•</span> At least one letter
+                                    </div>
+                                    <div className={`flex items-center gap-1 ${hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
+                                        <span className="text-lg">•</span> At least one number
+                                    </div>
+                                    <div className={`flex items-center gap-1 ${isLongEnough ? 'text-green-600' : 'text-gray-400'}`}>
+                                        <span className="text-lg">•</span> Minimum 6 characters
+                                    </div>
+                                </div>
+                            );
+                        }}
+                    </Form.Item>
+
+                    <Form.Item>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            block
+                            loading={isLoading}
+                            className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 h-10"
+                        >
+                            {isLoading ? 'Creating Account...' : 'Sign Up'}
+                        </Button>
+                    </Form.Item>
+
+                    <div className="text-center border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <Text type="secondary" className="dark:text-gray-400">
+                            Already have an account?{' '}
+                            <Link
+                                href="/login"
+                                className="text-green-600 hover:text-green-700 dark:text-green-400 font-medium"
+                            >
+                                Log In
+                            </Link>
+                        </Text>
+                    </div>
+                </Form>
+            </Card>
         </div>
-    )
+    );
 }

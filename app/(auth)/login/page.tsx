@@ -22,7 +22,18 @@ export default function LoginPage(){
     },[isAuthenticated, router]);
 
     const onFinish = async (values: any) => {
-        await dispatch(login({ email: values.email, password: values.password }));
+    try {
+        const resultAction = await dispatch(login({ 
+        email: values.email, 
+        password: values.password 
+        })).unwrap();
+        
+        // Success - useEffect redirect করবে
+        console.log('Login successful');
+    } catch (err) {
+        console.error('Login failed:', err);
+        // Error already shown in message
+    }
     };
 
     return (

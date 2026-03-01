@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
+import commentReducer from './slices/commentSlice';
 import postReducer from './slices/postSlice';
 import uiReducer from './slices/uiSlice';
 
@@ -8,6 +9,7 @@ export const store = configureStore({
         auth: authReducer,
         posts: postReducer,
         ui: uiReducer,
+        comments: commentReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

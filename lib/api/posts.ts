@@ -1,8 +1,25 @@
+import { Post, PostFilters } from '@/types/posts';
 import axiosInstance from "./axios";
 
+export interface PostsResponse {
+    posts: Post[];
+    total: number;
+    page: number;
+    totalPages: number;
+}
+
 export const postService = {
-    getPosts: async (page: number = 1, limit: number = 10) => {
-        const response = await axiosInstance.get(`/posts?page=${page}&limit=${limit}`);
+    getPosts: async (filters?: PostFilters): Promise<PostsResponse> => {
+    const response = await axiosInstance.get('/posts', { 
+        params: {
+            page: filters?.page || 1,
+            limit: filters?.limit || 10,
+            tag: filters?.tag,
+            author: filters?.author,
+            search: filters?.search,
+            sortBy: filters?.sortBy
+        }
+        });
         return response.data;
     },
 
@@ -41,5 +58,19 @@ export const postService = {
         params: { q: query, ...filters }
         });
         return response.data;
-    }
+    },
+
+    getTags: async () => {
+        const response = await axiosInstance.get('/tags');
+        return response.data;
+    },
+
+    uploadImage: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await axiosInstance.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
 };

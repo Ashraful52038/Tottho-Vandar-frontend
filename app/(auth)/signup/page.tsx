@@ -3,24 +3,45 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { signup } from '@/store/slices/authSlice';
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
-import { Button, Card, Form, Input, Typography } from "antd";
+import { Button, Card, Form, Input, message, Typography } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from 'react';
 
 const { Title, Text } = Typography;
 
 export default function SignupPage(){
     const router = useRouter();
     const dispatch = useAppDispatch();
-    const { isLoading, error } = useAppSelector((state)=> state.auth);
+    const { isLoading, error, isAuthenticated, user } = useAppSelector((state)=> state.auth);
 
-    const onFinish = async (values: any)=>{
-        await dispatch(signup({
-            name: values.name,
-            email: values.email,
-            password: values.password
-        }));
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            if (user.verified) {
+                router.push('/feed');
+            } else {
+                router.push('/verify-email');
+            }
+        }
+    }, [isAuthenticated, user, router]);
+
+
+    const onFinish = async (values: any) => {
+    try {
+        const resultAction = await dispatch(signup({
+        name: values.name,
+        email: values.email,
+        password: values.password
+        })).unwrap();
+        
+        // Success
+        message.success('Account created! Please verify your email.');
         router.push('/verify-email');
+    } catch (err) {
+        console.error('Signup failed:', err);
+        // Error already shown in message
+    }
     };
 
     return (

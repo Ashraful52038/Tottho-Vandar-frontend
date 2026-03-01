@@ -7,8 +7,8 @@ export interface LoginCredentials{
 
 export interface SignupData {
     name: string;
-    email: String;
-    password: String;
+    email: string;
+    password: string;
 }
 
 export interface AuthResponse{
@@ -34,12 +34,17 @@ export const authService = {
     },
 
     signup: async (data: SignupData): Promise<MessageResponse> => {
-        const response = await axiosInstance.post('/auth/login', data);
+        const response = await axiosInstance.post('/auth/register', data);
         return response.data;
     },
 
     verifyEmail: async (token:string): Promise<MessageResponse> => {
         const response = await axiosInstance.get(`/auth/verify-email?token=${token}`);
+        return response.data;
+    },
+
+    resendVerificationEmail: async (email: string): Promise<MessageResponse> => {
+        const response = await axiosInstance.post('/auth/resend-verification', { email });
         return response.data;
     },
 
@@ -49,7 +54,7 @@ export const authService = {
     },
 
     resetPassword: async (token: string, newPassword: string): Promise<MessageResponse> => {
-        const response = await axiosInstance.post('/auth/forget-password', {token, newPassword});
+        const response = await axiosInstance.post('/auth/reset-password', {token, newPassword});
         return response.data;
     },
 
@@ -61,6 +66,6 @@ export const authService = {
     },
 
     logout: async(): Promise<void> =>{
-        await axiosInstance.post('auth/logout');
+        await axiosInstance.post('/auth/logout');
     }
 }

@@ -1,6 +1,13 @@
 import { postService } from '@/lib/api/posts';
+import { PostFilters } from '@/types/user';
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { message } from 'antd';
+
+interface Tag {
+    id: string;
+    name: string;
+    count?: number;
+}
 
 interface Post {
     id: string,
@@ -12,10 +19,12 @@ interface Post {
     tags: string[];
     readingTime: number;
     likes: number;
-    comments: number;
+    commentsCount?: number;
+    likesCount?: number;
     createdAt: string;
     updatedAt: string;
     published: boolean;
+    featuredImage?: string;
 }
 
 interface PostState {
@@ -26,6 +35,7 @@ interface PostState {
     error: string | null;
     totalPosts: number;
     currentPage: number;
+    tags: Tag[];
 }
 
 const initialState: PostState = {
@@ -36,17 +46,18 @@ const initialState: PostState = {
     error: null,
     totalPosts: 0,
     currentPage: 1,
+    tags: [],
 };
 
 // Async thunks
 export const fetchPosts = createAsyncThunk(
     'posts/fetchPosts',
-    async ({ page = 1, limit = 10 }: { page?: number; limit?: number }, { rejectWithValue }) => {
+    async (filters: PostFilters={}, { rejectWithValue }) => {
         try {
-        const response = await postService.getPosts(page, limit);
-        return response;
+            const response = await postService.getPosts(filters);
+            return response;
         } catch (error: any) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to fetch posts');
+            return rejectWithValue(error.response?.data?.message || 'Failed to fetch posts');
         }
     }
 );
@@ -114,8 +125,8 @@ export const likePost = createAsyncThunk(
     }
 );
 
-export const fetchMyPost = createAsyncThunk(
-    'posts/fetchMyPost',
+export const fetchMyPosts = createAsyncThunk(
+    'posts/fetchMyPosts',
     async (_, { rejectWithValue }) => {
         try {
         const response = await postService.getMyPosts();
@@ -126,6 +137,19 @@ export const fetchMyPost = createAsyncThunk(
     }
 );
 
+export const fetchTags = createAsyncThunk(
+    'posts/fetchTags',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await postService.getTags();
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to fetch tags');
+        }
+    }
+);
+
+
 const postSlice = createSlice({
     name: 'posts',
     initialState,
@@ -135,6 +159,9 @@ const postSlice = createSlice({
         },
         setPage: (state, action: PayloadAction<number>) => {
         state.currentPage = action.payload;
+        },
+        clearError: (state) => { // error clear করার reducer যোগ করুন
+            state.error = null;
         },
     },
     extraReducers: (builder) => {
@@ -191,19 +218,22 @@ const postSlice = createSlice({
         })
 
         // Fetch My Posts
-        .addCase(fetchMyPost.pending, (state) => {
+        .addCase(fetchMyPosts.pending, (state) => {
             state.isLoading = true;
         })
-        .addCase(fetchMyPost.fulfilled, (state, action: PayloadAction<any>) => {
+        .addCase(fetchMyPosts.fulfilled, (state, action: PayloadAction<any>) => {
             state.isLoading = false;
             state.myPosts = action.payload;
         })
-        .addCase(fetchMyPost.rejected, (state, action) => {
+        .addCase(fetchMyPosts.rejected, (state, action) => {
             state.isLoading = false;
             state.error = action.payload as string;
         })
 
         // Like Post
+        .addCase(likePost.pending, (state) => {
+            // like করার সময় isLoading true না করাই ভালো
+        })
         .addCase(likePost.fulfilled, (state, action: PayloadAction<any>) => {
             const updatedPost = action.payload;
             const index = state.posts.findIndex(p => p.id === updatedPost.id);
@@ -213,6 +243,10 @@ const postSlice = createSlice({
             if (state.currentPost?.id === updatedPost.id) {
             state.currentPost = updatedPost;
             }
+        })
+        // Fetch Tags
+        .addCase(fetchTags.fulfilled, (state, action: PayloadAction<any>) => {
+            state.tags = action.payload.tags || action.payload;
         });
     },
 });

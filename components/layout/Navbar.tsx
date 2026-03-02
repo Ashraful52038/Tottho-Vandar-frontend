@@ -28,7 +28,7 @@ interface NavbarProps {
   searchQuery?: string;
 }
 
-// Mock notifications (পরে API থেকে আসবে)
+// Mock notifications
 const MOCK_NOTIFICATIONS = [
   { id: 1, type: 'like', message: 'John liked your post', time: '5 min ago', read: false },
   { id: 2, type: 'comment', message: 'Sarah commented on your post', time: '1 hour ago', read: false },

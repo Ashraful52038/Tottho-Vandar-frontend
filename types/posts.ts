@@ -1,4 +1,4 @@
-// types/post.ts
+
 export interface Post {
   id: string;
   title: string;
@@ -44,4 +44,31 @@ export interface PostFilters {
   search?: string;
   status?: 'draft' | 'published' | 'all';
   sortBy?: 'latest' | 'popular' | 'trending';
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  author: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  postId: string;
+  parentId?: string;
+  replies?: Comment[];
+  likes: number;
+  isLiked?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCommentData {
+  content: string;
+  postId: string;
+  parentId?: string;
+}
+
+export interface UpdateCommentData {
+  content: string;
 }

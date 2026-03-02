@@ -1,21 +1,20 @@
-// app/posts/create/page.tsx
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { createPost } from '@/store/slices/postSlice';
 import {
-    ArrowLeftOutlined,
-    PlusOutlined
+  ArrowLeftOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import {
-    Button,
-    Form,
-    Input,
-    message,
-    Select,
-    Space,
-    Spin,
-    Upload
+  Button,
+  Form,
+  Input,
+  message,
+  Select,
+  Space,
+  Spin,
+  Upload
 } from 'antd';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';

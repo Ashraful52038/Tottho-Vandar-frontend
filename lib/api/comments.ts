@@ -6,8 +6,11 @@ export const commentService = {
     return response.data;
   },
 
-  addComment: async (postId: string, content: string) => {
-    const response = await axiosInstance.post(`/posts/${postId}/comments`, { content });
+  addComment: async (postId: string, content: string, parentId?: string) => {
+    const response = await axiosInstance.post(`/posts/${postId}/comments`, 
+      { content,
+        ...(parentId && { parentId })
+      });
     return response.data;
   },
 
@@ -23,6 +26,11 @@ export const commentService = {
 
   likeComment: async (id: string) => {
     const response = await axiosInstance.post(`/comments/${id}/like`);
+    return response.data;
+  },
+
+  unlikeComment: async (id: string) => {
+    const response = await axiosInstance.delete(`/comments/${id}/like`);
     return response.data;
   },
 };

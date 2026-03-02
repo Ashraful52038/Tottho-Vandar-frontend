@@ -29,9 +29,9 @@ export const fetchComments = createAsyncThunk(
 
 export const addComment = createAsyncThunk(
     'comments/add',
-    async ({ postId, content }: { postId: string; content: string }, { rejectWithValue }) => {
+    async ({ postId, content, parentId }: { postId: string; content: string;parentId?: string }, { rejectWithValue }) => {
         try {
-        const response = await commentService.addComment(postId, content);
+        const response = await commentService.addComment(postId, content, parentId);
         message.success('Comment added successfully!');
         return response;
         } catch (error: any) {
@@ -78,6 +78,18 @@ export const likeComment = createAsyncThunk(
   }
 );
 
+export const unlikeComment = createAsyncThunk(
+  'comments/unlike',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await commentService.unlikeComment(id);
+      return { id, likes: response.likes };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to unlike comment');
+    }
+  }
+);
+
 const commentSlice = createSlice({
   name: 'comments',
   initialState,
@@ -113,7 +125,18 @@ const commentSlice = createSlice({
       .addCase(likeComment.fulfilled, (state, action) => {
         const { id, likes } = action.payload;
         const comment = state.comments.find(c => c.id === id);
-        if (comment) comment.likes = likes;
+        if (comment){
+          comment.likes = likes;
+          comment.isLiked = true;
+        }
+      })
+      .addCase(unlikeComment.fulfilled, (state, action) => {
+        const { id, likes } = action.payload;
+        const comment = state.comments.find(c => c.id === id);
+        if (comment) {
+          comment.likes = likes;
+          comment.isLiked = false; // ✅ unlike করলে isLiked false
+        }
       });
   },
 });

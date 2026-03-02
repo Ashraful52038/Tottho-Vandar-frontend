@@ -1,13 +1,8 @@
 import { postService } from '@/lib/api/posts';
+import { Tag } from '@/types/tags';
 import { PostFilters } from '@/types/user';
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { message } from 'antd';
-
-interface Tag {
-    id: string;
-    name: string;
-    count?: number;
-}
 
 interface Post {
     id: string,

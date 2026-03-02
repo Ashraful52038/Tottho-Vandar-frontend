@@ -1,15 +1,7 @@
 import { authService } from "@/lib/api/auth";
+import { User } from '@/types/user';
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { message } from "antd";
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    verified: boolean;
-    avatar?: string;
-    bio?: string;
-}
 
 interface AuthState {
     user: User | null;

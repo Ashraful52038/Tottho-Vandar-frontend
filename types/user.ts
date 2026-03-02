@@ -5,6 +5,7 @@ export interface User {
     verified: boolean;
     avatar?: string;
     bio?: string;
+    role: 'user' | 'admin' | 'moderator';
     createdAt?: string;
     updatedAt?: string;
 }
@@ -57,31 +58,26 @@ export interface ResetPasswordRequest {
 }
 
 export interface Comment {
-  id: string;
-  content: string;
-  authorId: string;
-  author?: User;
-  postId: string;
-  likes: number;
-  likesCount?: number;
-  createdAt: string;
-  updatedAt: string;
-  parentId?: string; // for nested comments
-  replies?: Comment[];
+    id: string;
+    content: string;
+    authorId: string;
+    author?: User;
+    postId: string;
+    likes: number;
+    likesCount?: number;
+    createdAt: string;
+    updatedAt: string;
+    isLiked?: boolean;
+    parentId?: string; // for nested comments
+    replies?: Comment[];
 }
 
-export interface Tag {
-  id: string;
-  name: string;
-  count: number;
-  description?: string;
-}
 
 export interface PostFilters {
-  tag?: string;
-  author?: string;
-  search?: string;
-  sortBy?: 'latest' | 'popular' | 'trending';
-  page?: number;
-  limit?: number;
+    tag?: string;
+    author?: string;
+    search?: string;
+    sortBy?: 'latest' | 'popular' | 'trending';
+    page?: number;
+    limit?: number;
 }

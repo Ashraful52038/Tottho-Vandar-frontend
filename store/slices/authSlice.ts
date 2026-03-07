@@ -3,7 +3,7 @@ import { User } from '@/types/user';
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { message } from "antd";
 
-interface AuthState {
+export interface AuthState {
     user: User | null;
     token: string | null;
     isLoading: boolean;

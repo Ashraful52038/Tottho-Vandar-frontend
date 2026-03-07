@@ -1,31 +1,9 @@
 import { postService } from '@/lib/api/posts';
+import { Post, PostFilters } from '@/types/posts';
 import { Tag } from '@/types/tags';
-import { PostFilters } from '@/types/user';
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { message } from 'antd';
 
-interface Post {
-    id: string;
-    title: string;
-    content: string;
-    excerpt?: string;
-    authorId: string;
-    author?: {
-        id: string;
-        name: string;
-        email: string;
-        avatar?: string;
-    };
-    tags: string[] | any[];  
-    readingTime: number;
-    likes: number;
-    likesCount?: number;     
-    commentsCount?: number;
-    createdAt: string;
-    updatedAt: string;
-    published: boolean;
-    featuredImage?: string;
-}
 
 interface PostState {
     posts: Post[];
@@ -215,13 +193,12 @@ const postSlice = createSlice({
                 state.error = action.payload as string;
             })
 
-            // Create Post - FIXED ✅
+            // Create Post
             .addCase(createPost.pending, (state) => {
                 state.isLoading = true;
             })
             .addCase(createPost.fulfilled, (state, action: PayloadAction<any>) => {
                 state.isLoading = false;
-                // ✅ Get the actual post from response
                 const newPost = action.payload?.post || action.payload;
                 if (newPost) {
                     state.posts = [newPost, ...state.posts];
@@ -241,13 +218,11 @@ const postSlice = createSlice({
                 }
             })
 
-            // Fetch My Posts - FIXED ✅
             .addCase(fetchMyPosts.pending, (state) => {
                 state.isLoading = true;
             })
             .addCase(fetchMyPosts.fulfilled, (state, action: PayloadAction<any>) => {
                 state.isLoading = false;
-                // ✅ Handle different response structures
                 if (action.payload?.posts) {
                     state.myPosts = action.payload.posts;
                 } else if (Array.isArray(action.payload)) {
@@ -261,7 +236,7 @@ const postSlice = createSlice({
                 state.error = action.payload as string;
             })
 
-            // Like Post - FIXED ✅
+            // Like Post
             .addCase(likePost.fulfilled, (state, action: PayloadAction<any>) => {
                 const updatedPost = action.payload?.post || action.payload;
                 if (!updatedPost?.id) return;
@@ -269,7 +244,15 @@ const postSlice = createSlice({
                 // Update in posts array
                 const index = state.posts.findIndex(p => p.id === updatedPost.id);
                 if (index !== -1) {
-                    state.posts[index] = { ...state.posts[index], ...updatedPost };
+                    const currentLiked = state.posts[index].isLiked || false;
+                    state.posts[index] = { 
+                        ...state.posts[index],
+                        ...updatedPost,
+                        isLiked: !currentLiked,
+                        likesCount: !currentLiked 
+                            ? (state.posts[index].likesCount || 0) + 1 
+                            : (state.posts[index].likesCount || 0) - 1
+                    };
                 }
                 
                 // Update current post if it's the same

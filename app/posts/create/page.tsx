@@ -125,7 +125,6 @@ export default function CreatePostPage() {
         return;
       }
 
-      // ✅ Use tagNames directly (this is what backend requires)
       const tagNames = values.tags;
       console.log('Publishing with tag names:', tagNames);
 

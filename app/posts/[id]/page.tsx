@@ -1,4 +1,3 @@
-// app/posts/[id]/page.tsx
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
@@ -45,6 +44,12 @@ export default function PostDetailPage() {
     }
   }, [dispatch, params.id]);
 
+  useEffect(() => {
+    if (currentPost) {
+      setLiked(currentPost.isLiked || false);
+    }
+  }, [currentPost]);
+
   const handleLike = async () => {
     if (!user) {
       router.push('/login');
@@ -70,6 +75,23 @@ export default function PostDetailPage() {
     router.push(`/posts/edit/${params.id}`);
   };
 
+  // Helper function to extract tag names
+  const getTagNames = (tags: any[]): string[] => {
+    if (!tags || !Array.isArray(tags)) return [];
+    
+    return tags.map(tag => {
+      // যদি ট্যাগ স্ট্রিং হয়
+      if (typeof tag === 'string') return tag;
+      // যদি ট্যাগ অবজেক্ট হয় { id, name, slug, ... }
+      if (tag && typeof tag === 'object') {
+        if (tag.name) return tag.name;
+        if (tag.slug) return tag.slug;
+        if (tag.id) return String(tag.id);
+      }
+      return '';
+    }).filter(tag => tag !== '');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -92,6 +114,7 @@ export default function PostDetailPage() {
   }
 
   const isAuthor = user?.id === currentPost.authorId;
+  const tagNames = getTagNames(currentPost.tags || []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -160,16 +183,18 @@ export default function PostDetailPage() {
             {currentPost.title}
           </h1>
 
-          {/* Tags */}
-          <div className="mb-6">
-            {currentPost.tags?.map(tag => (
-              <Link key={tag} href={`/feed?tag=${tag}`}>
-                <Tag color="blue" className="mr-2 px-3 py-1 text-sm cursor-pointer hover:opacity-80">
-                  {tag}
-                </Tag>
-              </Link>
-            ))}
-          </div>
+          {/* Tags - FIXED ✅ */}
+          {tagNames.length > 0 && (
+            <div className="mb-6">
+              {tagNames.map((tagName) => (
+                <Link key={tagName} href={`/feed?tag=${tagName}`}>
+                  <Tag color="blue" className="mr-2 px-3 py-1 text-sm cursor-pointer hover:opacity-80">
+                    {tagName}
+                  </Tag>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Featured Image */}
           {currentPost.featuredImage && (
@@ -192,7 +217,7 @@ export default function PostDetailPage() {
           </div>
         </article>
 
-        {/* Comments Section - We'll add later */}
+        {/* Comments Section */}
         <div className="mt-8 bg-white rounded-lg shadow-sm p-8">
           <h3 className="text-2xl font-serif font-semibold mb-4">
             Comments ({currentPost.commentsCount || 0})

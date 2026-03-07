@@ -2,10 +2,11 @@
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { likePost } from '@/store/slices/postSlice';
-import { Post } from '@/types/user';
+import { Post } from '@/types/posts';
 import {
   ClockCircleOutlined,
   CommentOutlined,
+  EyeOutlined,
   HeartFilled,
   HeartOutlined,
   UserOutlined
@@ -14,15 +15,17 @@ import { Avatar, Button, Card, Space, Tag, Tooltip, Typography } from 'antd';
 import moment from 'moment';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.bubble.css'; // bubble theme ব্যবহার করুন
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 interface PostCardProps {
   post: Post;
   onPostClick?: (id: string) => void;
 }
 
-// Helper function to normalize post data (handle different data structures)
+// Helper function to normalize post data
 const normalizePost = (post: any): Post => {
   // Handle author
   let author = post.author;
@@ -41,16 +44,22 @@ const normalizePost = (post: any): Post => {
   }
 
   // Handle tags
-  let tags = post.tags || [];
-  if (typeof tags[0] === 'object' && tags[0]?.name) {
-    tags = tags.map((t: any) => t.name);
+  let tags: string[] = [];
+  if (post.tags) {
+    tags = post.tags.map((tag: any) => {
+      if (typeof tag === 'string') return tag;
+      if (tag && typeof tag === 'object') {
+        return tag.name || tag.slug || tag.id || String(tag);
+      }
+      return String(tag);
+    });
   }
 
   return {
     id: post.id || '',
     title: post.title || '',
     content: post.content || '',
-    excerpt: post.excerpt || post.content?.substring(0, 200),
+    excerpt: post.excerpt || '',
     authorId: post.authorId || author.id,
     author: author,
     tags: tags,
@@ -63,7 +72,8 @@ const normalizePost = (post: any): Post => {
     published: post.published || post.status === 'published',
     status: post.status || (post.published ? 'published' : 'draft'),
     createdAt: post.createdAt || new Date().toISOString(),
-    updatedAt: post.updatedAt || post.createdAt || new Date().toISOString()
+    updatedAt: post.updatedAt || post.createdAt || new Date().toISOString(),
+    isLiked: post.isLiked || false
   };
 };
 
@@ -72,8 +82,9 @@ export default function PostCard({ post: originalPost, onPostClick }: PostCardPr
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const [liked, setLiked] = useState(originalPost.isLiked || false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
-  // Normalize the post data to handle different structures
   const post = normalizePost(originalPost);
 
   const handleLike = async (e: React.MouseEvent) => {
@@ -108,118 +119,148 @@ export default function PostCard({ post: originalPost, onPostClick }: PostCardPr
     router.push(`/feed?tag=${encodeURIComponent(tag)}`);
   };
 
+
   return (
     <Card 
       hoverable 
-      className="mb-4 cursor-pointer hover:shadow-lg transition-shadow duration-300 card-bg border-custom"
+      className="mb-6 cursor-pointer hover:shadow-xl transition-all duration-300 card-bg border-custom overflow-hidden rounded-xl"
       onClick={handleClick}
-      cover={post.featuredImage && (
-        <div className="h-48 overflow-hidden rounded-t-lg">
-          <img 
-            alt={post.title} 
-            src={post.featuredImage}
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-        </div>
-      )}
-      styles={{ body: { padding: '20px' } }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      styles={{ body: { padding: 0 } }}
     >
-      {/* Author Info */}
-      <div className="flex items-center mb-3">
-        <Avatar 
-          icon={<UserOutlined />} 
-          src={post.author?.avatar}
-          size={40}
-          className="border border-custom"
-        />
-        <div className="ml-3">
-          <div className="font-medium heading-color hover:text-green-600 dark:hover:text-green-400 transition-colors">
-            {post.author?.name || 'Unknown Author'}
-          </div>
-          <div className="flex items-center text-xs text-secondary">
-            <Tooltip title={moment(post.createdAt).format('LLLL')}>
-              <ClockCircleOutlined className="mr-1" />
-              <span>{moment(post.createdAt).fromNow()}</span>
-            </Tooltip>
-            {post.readingTime ? (
-              <>
-                <span className="mx-2">·</span>
-                <span>{post.readingTime} min read</span>
-              </>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      {/* Post Title */}
-      <Title level={4} className="mb-2 heading-color hover:text-green-600 dark:hover:text-green-400 transition-colors line-clamp-2">
-        {post.title}
-      </Title>
-      
-      {/* Post Excerpt */}
-      <Paragraph 
-        ellipsis={{ rows: 3, expandable: false }} 
-        className="paragraph-color mb-3"
-      >
-        {post.excerpt || post.content?.replace(/<[^>]*>/g, '').substring(0, 200)}
-      </Paragraph>
-
-      {/* Tags */}
-      {post.tags && post.tags.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-1">
-          {post.tags.slice(0, 3).map((tag: string) => (
-            <Tag 
-              key={tag} 
-              color="blue" 
-              className="mr-1 px-2 py-1 text-xs dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800 cursor-pointer hover:opacity-80"
-              onClick={(e) => handleTagClick(e, tag)}
+      <div className="flex flex-col md:flex-row">
+        {/* Left side - Content */}
+        <div className="flex-1 p-5">
+          {/* Author Info */}
+          <div className="flex items-center mb-3">
+            <Avatar 
+              icon={<UserOutlined />} 
+              src={post.author?.avatar}
+              size={44}
+              className="border-2 border-green-500 dark:border-green-400"
             >
-              {tag}
-            </Tag>
-          ))}
-          {post.tags.length > 3 && (
-            <Tag className="px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
-              +{post.tags.length - 3}
-            </Tag>
-          )}
-        </div>
-      )}
+              {post.author?.name?.charAt(0) || 'U'}
+            </Avatar>
+            <div className="ml-3">
+              <div className="font-semibold heading-color hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                {post.author?.name || 'Unknown Author'}
+              </div>
+              <div className="flex items-center text-xs text-secondary">
+                <Tooltip title={moment(post.createdAt).format('LLLL')}>
+                  <ClockCircleOutlined className="mr-1" />
+                  <span>{moment(post.createdAt).fromNow()}</span>
+                </Tooltip>
+                {post.readingTime ? (
+                  <>
+                    <span className="mx-2">·</span>
+                    <EyeOutlined className="mr-1" />
+                    <span>{post.readingTime} min read</span>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-2 border-t border-custom">
-        <Space size="middle">
-          <Button 
-            type="text" 
-            icon={liked ? 
-              <HeartFilled className="text-red-500 dark:text-red-400 text-lg" /> : 
-              <HeartOutlined className="text-secondary text-lg" />
-            }
-            onClick={handleLike}
-            className="flex items-center text-secondary hover:text-red-500 dark:hover:text-red-400"
+          {/* Post Title */}
+          <Title 
+            level={4} 
+            className={`mb-2 heading-color transition-all duration-300 line-clamp-2 ${
+              isHovered ? 'text-green-600 dark:text-green-400' : ''
+            }`}
           >
-            <span className="ml-1">{post.likesCount || post.likes || 0}</span>
-          </Button>
+            {post.title}
+          </Title>
           
-          <Button 
-            type="text" 
-            icon={<CommentOutlined className="text-secondary text-lg" />}
-            onClick={handleCommentClick}
-            className="flex items-center text-secondary hover:text-blue-500 dark:hover:text-blue-400"
-          >
-            <span className="ml-1">{post.commentsCount || post.comments || 0}</span>
-          </Button>
-        </Space>
+          {/* Content Preview -*/}
+          <div className="prose prose-sm max-w-none mb-3 line-clamp-2 text-sm paragraph-color">
+            <ReactQuill
+              value={post.content?.substring(0, 300) + (post.content?.length > 300 ? '...' : '')}
+              readOnly={true}
+              theme="bubble"
+              className="quill-preview"
+            />
+          </div>
 
-        <Button 
-          type="link" 
-          className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 p-0"
-          onClick={handleClick}
-        >
-          Read more
-        </Button>
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-1">
+              {post.tags.slice(0, 3).map((tag: string) => (
+                <Tag 
+                  key={tag} 
+                  className="px-2 py-0.5 text-xs rounded-full cursor-pointer hover:scale-105 transition-all border-0"
+                  style={{ background: '#e6f7e6', color: '#2e7d32' }}
+                  onClick={(e) => handleTagClick(e, tag)}
+                >
+                  #{tag}
+                </Tag>
+              ))}
+              {post.tags.length > 3 && (
+                <Tag className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-0">
+                  +{post.tags.length - 3}
+                </Tag>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-2 border-t border-custom">
+            <Space size="middle">
+              <Button 
+                type="text" 
+                icon={liked ? 
+                  <HeartFilled className="text-red-500 dark:text-red-400 text-base" /> : 
+                  <HeartOutlined className="text-secondary text-base hover:text-red-500 transition-colors" />
+                }
+                onClick={handleLike}
+                className="flex items-center gap-1 h-auto px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
+              >
+                <span className="ml-1 text-xs font-medium">{post.likesCount || post.likes || 0}</span>
+              </Button>
+              
+              <Button 
+                type="text" 
+                icon={<CommentOutlined className="text-secondary text-base hover:text-blue-500 transition-colors" />}
+                onClick={handleCommentClick}
+                className="flex items-center gap-1 h-auto px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-all"
+              >
+                <span className="ml-1 text-xs font-medium">{post.commentsCount || post.comments || 0}</span>
+              </Button>
+            </Space>
+
+            <Button 
+              type="link" 
+              className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 p-0 text-sm font-medium transition-all hover:translate-x-1"
+              onClick={handleClick}
+            >
+              Read more →
+            </Button>
+          </div>
+        </div>
+
+        {/* Right side - Featured Image */}
+        {post.featuredImage && !imageError ? (
+          <div className="md:w-48 lg:w-56 relative overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-r-xl">
+            <div className="h-full w-full min-h-45">
+              <img 
+                alt={post.title} 
+                src={post.featuredImage}
+                className={`w-full h-full object-cover transition-all duration-700 ${
+                  isHovered ? 'scale-110' : 'scale-100'
+                }`}
+                onError={() => setImageError(true)}
+                style={{ minHeight: '150px', maxHeight: '180px' }}
+              />
+              <div className={`absolute inset-0 bg-gradient-to-t from-black/30 to-transparent transition-opacity duration-300 ${
+                isHovered ? 'opacity-100' : 'opacity-0'
+              }`} />
+            </div>
+          </div>
+        ) : (
+          <div className="md:w-48 lg:w-56 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-r-xl flex items-center justify-center min-h-45">
+            <span className="text-4xl text-green-700 dark:text-green-300">📷</span>
+          </div>
+        )}
       </div>
     </Card>
   );

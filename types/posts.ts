@@ -1,27 +1,29 @@
+import { User } from "./user";
 
 export interface Post {
-  id: string;
-  title: string;
-  content: string;
-  excerpt?: string;
-  authorId: string;
-  author?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-    bio?: string;
-  };
-  tags: string[];
-  featuredImage?: string;
-  likes: number;
-  likesCount?: number;
-  commentsCount?: number;
-  readingTime?: number;
-  status: 'draft' | 'published';
-  createdAt: string;
-  updatedAt: string;
-  views?: number;
+    id: string | number;
+    title: string;
+    content: string;
+    excerpt?: string;
+    authorId?: string | number;
+    author?: {
+        id: string | number;
+        name: string;
+        email?: string;
+        avatar?: string | null;
+    } | User;
+    tags: string[] | any[];
+    featuredImage?: string | null;
+    likes?: number;
+    likesCount?: number;
+    comments?: number;
+    commentsCount?: number;
+    readingTime?: number;
+    published?: boolean;
+    status?: 'draft' | 'published';
+    createdAt: string;
+    updatedAt: string;
+    isLiked?: boolean;
 }
 
 export interface CreatePostData {

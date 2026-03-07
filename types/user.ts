@@ -10,32 +10,6 @@ export interface User {
     updatedAt?: string;
 }
 
-export interface Post {
-  id: string | number;
-  title: string;
-  content: string;
-  excerpt?: string;
-  authorId?: string | number;
-  author?: {
-    id: string | number;
-    name: string;
-    email?: string;
-    avatar?: string | null;
-  } | User;  // ✅ both formats accepted
-  tags: string[] | any[];
-  featuredImage?: string | null;
-  likes?: number;
-  likesCount?: number;
-  comments?: number;
-  commentsCount?: number;
-  readingTime?: number;
-  published?: boolean;
-  status?: 'draft' | 'published';
-  createdAt: string;
-  updatedAt: string;
-  isLiked?: boolean;
-}
-
 export interface LoginRequest {
     email: string;
     password: string;
@@ -80,12 +54,3 @@ export interface Comment {
     replies?: Comment[];
 }
 
-
-export interface PostFilters {
-    tag?: string;
-    author?: string;
-    search?: string;
-    sortBy?: 'latest' | 'popular' | 'trending';
-    page?: number;
-    limit?: number;
-}

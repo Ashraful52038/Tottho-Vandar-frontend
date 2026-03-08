@@ -35,7 +35,6 @@ export default function PostDetailPage() {
   const dispatch = useAppDispatch();
   const { currentPost, isLoading, error } = useAppSelector((state) => state.posts);
   const { user } = useAppSelector((state) => state.auth);
-  const [liked, setLiked] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useEffect(() => {
@@ -44,19 +43,22 @@ export default function PostDetailPage() {
     }
   }, [dispatch, params.id]);
 
-  useEffect(() => {
-    if (currentPost) {
-      setLiked(currentPost.isLiked || false);
+  const handleLike = async (e?: React.MouseEvent) => {
+      if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-  }, [currentPost]);
 
-  const handleLike = async () => {
     if (!user) {
       router.push('/login');
       return;
     }
-    await dispatch(likePost(params.id as string));
-    setLiked(!liked);
+
+    try {
+      await dispatch(likePost(params.id as string)).unwrap();
+    } catch (error) {
+      message.error('Failed to like post');
+    }
   };
 
   const handleDelete = async () => {
@@ -80,9 +82,7 @@ export default function PostDetailPage() {
     if (!tags || !Array.isArray(tags)) return [];
     
     return tags.map(tag => {
-      // যদি ট্যাগ স্ট্রিং হয়
       if (typeof tag === 'string') return tag;
-      // যদি ট্যাগ অবজেক্ট হয় { id, name, slug, ... }
       if (tag && typeof tag === 'object') {
         if (tag.name) return tag.name;
         if (tag.slug) return tag.slug;
@@ -116,6 +116,9 @@ export default function PostDetailPage() {
   const isAuthor = user?.id === currentPost.authorId;
   const tagNames = getTagNames(currentPost.tags || []);
 
+  const likesCount = currentPost?.likesCount || currentPost?.likes || 0;
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -127,10 +130,10 @@ export default function PostDetailPage() {
             </Link>
             <Space>
               <Button
-                icon={liked ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
+                icon={(likesCount > 0) ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
                 onClick={handleLike}
               >
-                {currentPost.likesCount || currentPost.likes || 0}
+                {likesCount}
               </Button>
               <Button icon={<CommentOutlined />}>
                 {currentPost.commentsCount || 0}
@@ -183,7 +186,7 @@ export default function PostDetailPage() {
             {currentPost.title}
           </h1>
 
-          {/* Tags - FIXED ✅ */}
+          {/* Tags */}
           {tagNames.length > 0 && (
             <div className="mb-6">
               {tagNames.map((tagName) => (

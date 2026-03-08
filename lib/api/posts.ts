@@ -44,7 +44,7 @@ export const postService = {
     },
 
     likePost: async (id: string) => {
-        const response = await axiosInstance.post(`/posts/${id}/like`);
+        const response = await axiosInstance.post(`/likes/posts/${id}`);
         return response.data;
     },
 

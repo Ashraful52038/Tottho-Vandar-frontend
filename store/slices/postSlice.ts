@@ -107,6 +107,7 @@ export const likePost = createAsyncThunk(
     async (id: string, { rejectWithValue }) => {
         try {
             const response = await postService.likePost(id);
+            console.log('Like API response:', response);
             return response;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to like post');
@@ -161,7 +162,7 @@ const postSlice = createSlice({
             })
             .addCase(fetchPosts.fulfilled, (state, action: PayloadAction<any>) => {
                 state.isLoading = false;
-                // ✅ Check if response has posts property
+                //Check if response has posts property
                 if (action.payload?.posts) {
                     state.posts = action.payload.posts;
                     state.totalPosts = action.payload.total || action.payload.posts.length;
@@ -185,7 +186,7 @@ const postSlice = createSlice({
             })
             .addCase(fetchPostById.fulfilled, (state, action: PayloadAction<any>) => {
                 state.isLoading = false;
-                // ✅ Handle both {post} and direct post
+                // Handle both {post} and direct post
                 state.currentPost = action.payload?.post || action.payload;
             })
             .addCase(fetchPostById.rejected, (state, action) => {
@@ -237,27 +238,19 @@ const postSlice = createSlice({
             })
 
             // Like Post
-            .addCase(likePost.fulfilled, (state, action: PayloadAction<any>) => {
-                const updatedPost = action.payload?.post || action.payload;
+            .addCase(likePost.fulfilled, (state, action) => {
+                const updatedPost = action.payload;
                 if (!updatedPost?.id) return;
                 
                 // Update in posts array
                 const index = state.posts.findIndex(p => p.id === updatedPost.id);
                 if (index !== -1) {
-                    const currentLiked = state.posts[index].isLiked || false;
-                    state.posts[index] = { 
-                        ...state.posts[index],
-                        ...updatedPost,
-                        isLiked: !currentLiked,
-                        likesCount: !currentLiked 
-                            ? (state.posts[index].likesCount || 0) + 1 
-                            : (state.posts[index].likesCount || 0) - 1
-                    };
+                    state.posts[index] = updatedPost;
                 }
                 
                 // Update current post if it's the same
                 if (state.currentPost?.id === updatedPost.id) {
-                    state.currentPost = { ...state.currentPost, ...updatedPost };
+                state.currentPost = updatedPost;
                 }
             })
 

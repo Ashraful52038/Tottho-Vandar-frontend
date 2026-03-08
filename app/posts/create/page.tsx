@@ -91,7 +91,7 @@ export default function CreatePostPage() {
         return;
       }
 
-      // ✅ Use tagNames directly
+      // Use tagNames directly
       const tagNames = values.tags;
 
       await dispatch(createPost({
@@ -151,10 +151,25 @@ export default function CreatePostPage() {
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const imageUrl = URL.createObjectURL(file);
-      setFeaturedImage(imageUrl);
-      message.success('Image uploaded successfully!');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/upload/image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+
+    const data = await response.json();
+    setFeaturedImage(data.url);
+    message.success('Image uploaded successfully!');
     } catch (error) {
       message.error('Failed to upload image');
     } finally {

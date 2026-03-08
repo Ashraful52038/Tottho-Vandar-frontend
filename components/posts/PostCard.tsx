@@ -87,7 +87,6 @@ export default function PostCard({ post: originalPost, onPostClick }: PostCardPr
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const [liked, setLiked] = useState(originalPost.isLiked || false);
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -99,18 +98,24 @@ export default function PostCard({ post: originalPost, onPostClick }: PostCardPr
   }, []);
 
   const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!user) {
       router.push('/login');
       return;
     }
     try {
-      await dispatch(likePost(post.id as string)).unwrap();
-      setLiked(!liked);
+      const result = await dispatch(likePost(post.id as string)).unwrap();
+      console.log('Like result:', result);
     } catch (error) {
       console.error('Failed to like post:', error);
     }
   };
+
+  const liked = useAppSelector((state) => {
+  const found = state.posts.posts.find(p => p.id === post.id);
+  return found?.isLiked || false;
+  });
 
   const handleClick = () => {
     if (onPostClick) {
@@ -229,14 +234,14 @@ export default function PostCard({ post: originalPost, onPostClick }: PostCardPr
             <Space size="middle">
               <Button 
                 type="text" 
-                icon={liked ? 
+                icon={(post.likesCount ?? 0) > 0 ? 
                   <HeartFilled className="text-red-500 dark:text-red-400 text-base" /> : 
                   <HeartOutlined className="text-secondary text-base hover:text-red-500 transition-colors" />
                 }
                 onClick={handleLike}
                 className="flex items-center gap-1 h-auto px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
               >
-                <span className="ml-1 text-xs font-medium">{post.likesCount || post.likes || 0}</span>
+                <span className="ml-1 text-xs font-medium">{post.likesCount}</span>
               </Button>
               
               <Button 
@@ -270,15 +275,15 @@ export default function PostCard({ post: originalPost, onPostClick }: PostCardPr
                   isHovered ? 'scale-110' : 'scale-100'
                 }`}
                 onError={() => setImageError(true)}
-                style={{ height: '140px', marginTop: '100px' }}
+                style={{ height: '140px' }}
               />
-              <div className={`absolute inset-0 bg-gradient-to-t from-black/30 to-transparent transition-opacity duration-300 ${
+              <div className={`absolute inset-0 bg-linear-to-t from-black/30 to-transparent transition-opacity duration-300 ${
                 isHovered ? 'opacity-100' : 'opacity-0'
               }`} />
             </div>
           </div>
         ) : (
-          <div className="md:w-44 lg:w-48 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-r-xl flex items-center justify-center" style={{ height: '160px' }}>
+          <div className="md:w-44 lg:w-48 bg-linear-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-r-xl flex items-center justify-center" style={{ height: '160px' }}>
             <span className="text-4xl text-green-700 dark:text-green-300">📷</span>
           </div>
         )}

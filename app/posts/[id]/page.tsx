@@ -2,6 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { deletePost, fetchPostById, likePost } from '@/store/slices/postSlice';
+import { Post } from '@/types/posts';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import {
   ArrowLeftOutlined,
@@ -21,6 +22,7 @@ import {
   Space,
   Spin,
   Tag,
+  Tooltip,
   message
 } from 'antd';
 import moment from 'moment';
@@ -30,18 +32,56 @@ import { useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-// Generate a random gradient for posts without image (same as PostCard)
-const getRandomGradient = () => {
-  const gradients = [
-    'from-purple-400 to-pink-400',
-    'from-blue-400 to-teal-400',
-    'from-green-400 to-cyan-400',
-    'from-yellow-400 to-orange-400',
-    'from-red-400 to-pink-400',
-    'from-indigo-400 to-purple-400',
-  ];
-  return gradients[Math.floor(Math.random() * gradients.length)];
+// Post normalize function (PostCard থেকে নেওয়া)
+const normalizePost = (post: any): Post => {
+  let author = post.author;
+  if (!author && post.authorId) {
+    author = {
+      id: post.authorId,
+      name: post.authorName || 'Unknown Author',
+      avatar: post.authorAvatar || null
+    };
+  } else if (!author) {
+    author = {
+      id: 'unknown',
+      name: 'Unknown Author',
+      avatar: null
+    };
+  }
+
+  let tags: string[] = [];
+  if (post.tags) {
+    tags = post.tags.map((tag: any) => {
+      if (typeof tag === 'string') return tag;
+      if (tag && typeof tag === 'object') {
+        return tag.name || tag.slug || tag.id || String(tag);
+      }
+      return String(tag);
+    });
+  }
+
+  return {
+    id: post.id || '',
+    title: post.title || '',
+    content: post.content || '',
+    excerpt: post.excerpt || '',
+    authorId: post.authorId || author.id,
+    author: author,
+    tags: tags,
+    featuredImage: post.featuredImage || post.coverImage,
+    likes: post.likes || post.likesCount || 0,
+    likesCount: post.likesCount || post.likes || 0,
+    comments: post.comments || post.commentsCount || 0,
+    commentsCount: post.commentsCount || post.comments || 0,
+    readingTime: post.readingTime || Math.ceil((post.content?.length || 0) / 1000),
+    published: post.published || post.status === 'published',
+    status: post.status || (post.published ? 'published' : 'draft'),
+    createdAt: post.createdAt || new Date().toISOString(),
+    updatedAt: post.updatedAt || post.createdAt || new Date().toISOString(),
+    isLiked: post.isLiked || false
+  };
 };
+
 
 export default function PostDetailPage() {
   const params = useParams();
@@ -93,19 +133,6 @@ export default function PostDetailPage() {
     router.push(`/posts/edit/${params.id}`);
   };
 
-  const getTagNames = (tags: any[]): string[] => {
-    if (!tags || !Array.isArray(tags)) return [];
-    return tags.map(tag => {
-      if (typeof tag === 'string') return tag;
-      if (tag && typeof tag === 'object') {
-        if (tag.name) return tag.name;
-        if (tag.slug) return tag.slug;
-        if (tag.id) return String(tag.id);
-      }
-      return '';
-    }).filter(tag => tag !== '');
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -127,13 +154,13 @@ export default function PostDetailPage() {
     );
   }
 
-  const isAuthor = user?.id === currentPost.authorId;
-  const tagNames = getTagNames(currentPost.tags || []);
-  const likesCount = currentPost?.likesCount || currentPost?.likes || 0;
+  // Normalize the post data
+  const post = normalizePost(currentPost);
+  const isAuthor = user?.id === post.authorId;
+  const likesCount = post?.likesCount || post?.likes || 0;
+  const imageUrl = getFullImageUrl(post.featuredImage);
 
-  // Use the same image utility function as PostCard
-  const imageUrl = getFullImageUrl(currentPost.featuredImage);
-  const randomGradient = getRandomGradient();
+  const tagNames = post.tags || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,7 +179,7 @@ export default function PostDetailPage() {
                 {likesCount}
               </Button>
               <Button icon={<CommentOutlined />}>
-                {currentPost.commentsCount || 0}
+                {post.commentsCount || 0}
               </Button>
               {isAuthor && (
                 <>
@@ -175,126 +202,120 @@ export default function PostDetailPage() {
 
       {/* Post Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <article className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <article className="bg-white rounded-2xl shadow-sm overflow-hidden border-0">
           
-          {/* ✅ Large Featured Image at the top - same style as PostCard but bigger */}
-          <div className="relative w-full h-96 bg-gray-100 overflow-hidden">
-            {imageUrl && !imageError ? (
-              <>
-                <img 
-                  src={imageUrl}
-                  alt={currentPost.title}
-                  className={`w-full h-full object-cover transition-all duration-700 ${
-                    isHovered ? 'scale-110' : 'scale-100'
-                  }`}
-                  onError={() => setImageError(true)}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                />
-                {/* Gradient Overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
-                  isHovered ? 'opacity-100' : 'opacity-70'
-                }`} />
-                
-                {/* Image caption/title overlay */}
-                <div className="absolute bottom-6 left-6 right-6">
-                  <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-2 drop-shadow-lg">
-                    {currentPost.title}
-                  </h1>
-                  <div className="flex items-center text-white/90 text-sm">
-                    <ClockCircleOutlined className="mr-1" />
-                    <span>{moment(currentPost.createdAt).format('MMMM D, YYYY')}</span>
-                    <span className="mx-2">·</span>
-                    <span>{currentPost.readingTime || 5} min read</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              // Gradient fallback when no image or image error
-              <div className={`w-full h-full bg-gradient-to-br ${randomGradient} flex flex-col items-center justify-center`}>
-                <span className="text-6xl mb-4">📝</span>
-                <h1 className="text-4xl font-serif font-bold text-white text-center px-4 drop-shadow-lg">
-                  {currentPost.title}
-                </h1>
-                <div className="flex items-center text-white/90 text-sm mt-4">
-                  <ClockCircleOutlined className="mr-1" />
-                  <span>{moment(currentPost.createdAt).format('MMMM D, YYYY')}</span>
-                  <span className="mx-2">·</span>
-                  <span>{currentPost.readingTime || 5} min read</span>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Featured Image - Large at the top (PostCard এর মত but bigger) */}
+          {post.featuredImage && !imageError ? (
+            <div className="relative w-full h-96 overflow-hidden bg-gray-100">
+              <img 
+                alt={post.title} 
+                src={imageUrl || ''}
+                className={`w-full h-full object-cover transition-all duration-700 ${
+                  isHovered ? 'scale-110' : 'scale-100'
+                }`}
+                onError={() => setImageError(true)}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+              />
+              {/* Gradient Overlay */}
+              <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
+                isHovered ? 'opacity-100' : 'opacity-70'
+              }`} />
+            </div>
+          ) : (
+            /* Gradient Fallback (PostCard এর মত) */
+            <div className={`w-full h-96 bg-gradient-to-br flex flex-col items-center justify-center`}>
+              <span className="text-6xl mb-4">📝</span>
+              <span className="text-white font-medium text-xl opacity-90 line-clamp-2 px-4 text-center">
+                {post.title}
+              </span>
+            </div>
+          )}
 
           {/* Content Section */}
           <div className="p-8">
-            {/* Author Info - Moved below image */}
+            {/* Author Info - PostCard এর মত */}
             <div className="flex items-center mb-6">
               <Avatar 
-                size={64} 
                 icon={<UserOutlined />} 
-                src={currentPost.author?.avatar}
-                className="border-2 border-gray-200"
+                src={post.author?.avatar}
+                size={64}
+                className="border-2 border-green-500 shadow-md"
               >
-                {currentPost.author?.name?.charAt(0)}
+                {post.author?.name?.charAt(0) || 'U'}
               </Avatar>
               <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {currentPost.author?.name || 'Unknown Author'}
-                </h2>
-                <div className="flex items-center text-gray-500 mt-1">
-                  <span>Posted on {moment(currentPost.createdAt).format('MMMM D, YYYY')}</span>
+                <div className="font-bold text-gray-900 text-xl">
+                  {post.author?.name || 'Unknown Author'}
+                </div>
+                <div className="flex items-center text-sm text-gray-500 mt-1">
+                  <ClockCircleOutlined className="mr-1" />
+                  <Tooltip title={moment(post.createdAt).format('LLLL')}>
+                    <span>{moment(post.createdAt).fromNow()}</span>
+                  </Tooltip>
+                  {post.readingTime ? (
+                    <>
+                      <span className="mx-2">·</span>
+                      <span>{post.readingTime} min read</span>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
 
+            {/* Title */}
+            <h1 className={`text-4xl font-serif font-bold mb-6 transition-all duration-300 ${
+              isHovered ? 'text-green-600' : 'text-gray-900'
+            }`}>
+              {post.title}
+            </h1>
+
+            {/* Content - ReactQuill with bubble theme */}
+            <div className="prose prose-lg max-w-none mb-8">
+              <ReactQuill
+                value={post.content}
+                readOnly={true}
+                theme="bubble"
+              />
+            </div>
+
             {/* Tags */}
             {tagNames.length > 0 && (
-              <div className="mb-6">
-                {tagNames.map((tagName) => (
-                  <Link key={tagName} href={`/feed?tag=${tagName}`}>
+              <div className="mb-6 flex flex-wrap gap-2">
+                {tagNames.map((tag: string) => (
+                  <Link key={tag} href={`/feed?tag=${tag}`}>
                     <Tag 
-                      className="px-4 py-1.5 text-sm font-medium rounded-full border-0 cursor-pointer hover:opacity-80 transition-all"
+                      className="px-4 py-1.5 text-sm font-medium rounded-full border-0 cursor-pointer transition-all hover:shadow-md"
                       style={{ 
                         background: '#e6f7e6', 
-                        color: '#2e7d32',
-                        marginRight: '8px',
-                        marginBottom: '8px'
+                        color: '#2e7d32'
                       }}
                     >
-                      #{tagName}
+                      #{tag}
                     </Tag>
                   </Link>
                 ))}
               </div>
             )}
 
-            {/* Post Content */}
-            <div className="prose prose-lg max-w-none">
-              <ReactQuill
-                value={currentPost.content}
-                readOnly={true}
-                theme="bubble"
-              />
-            </div>
 
-            {/* Stats at the bottom */}
-            <div className="flex items-center gap-6 pt-6 mt-8 border-t border-gray-100">
-              <div className="flex items-center gap-2 text-gray-600">
+            {/* Stats */}
+            <div className="flex items-center gap-6 pt-6 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-gray-400">
                 {(likesCount > 0) ? (
-                  <HeartFilled className="text-red-500 text-xl" />
+                  <HeartFilled className="text-red-500 text-xl transition-transform hover:scale-110" />
                 ) : (
-                  <HeartOutlined className="text-xl" />
+                  <HeartOutlined className="text-xl transition-transform hover:scale-110 hover:text-red-500" />
                 )}
                 <span className="text-base font-medium">
                   {likesCount} {likesCount === 1 ? 'like' : 'likes'}
                 </span>
               </div>
               
-              <div className="flex items-center gap-2 text-gray-600">
-                <CommentOutlined className="text-xl" />
+              <div className="flex items-center gap-2 text-gray-400">
+                <CommentOutlined className="text-xl transition-transform hover:scale-110 hover:text-blue-500" />
                 <span className="text-base font-medium">
-                  {currentPost.commentsCount || 0} {currentPost.commentsCount === 1 ? 'comment' : 'comments'}
+                  {post.commentsCount || 0} {post.commentsCount === 1 ? 'comment' : 'comments'}
                 </span>
               </div>
             </div>
@@ -302,9 +323,9 @@ export default function PostDetailPage() {
         </article>
 
         {/* Comments Section */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm p-8">
+        <div className="mt-8 bg-white rounded-2xl shadow-sm p-8">
           <h3 className="text-2xl font-serif font-semibold mb-4">
-            Comments ({currentPost.commentsCount || 0})
+            Comments ({post.commentsCount || 0})
           </h3>
           <p className="text-gray-500 text-center py-8">
             Comments section coming soon...

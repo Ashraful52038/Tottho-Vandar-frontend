@@ -26,13 +26,15 @@ import {
   message
 } from 'antd';
 import moment from 'moment';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-// Post normalize function (PostCard থেকে নেওয়া)
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+
+// Post normalize function
 const normalizePost = (post: any): Post => {
   let author = post.author;
   if (!author && post.authorId) {
@@ -82,7 +84,6 @@ const normalizePost = (post: any): Post => {
   };
 };
 
-
 export default function PostDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -92,6 +93,7 @@ export default function PostDetailPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (params.id) {
@@ -99,17 +101,11 @@ export default function PostDetailPage() {
     }
   }, [dispatch, params.id]);
 
-  const handleLike = async (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
+  const handleLike = async () => {
     if (!user) {
       router.push('/login');
       return;
     }
-
     try {
       await dispatch(likePost(params.id as string)).unwrap();
     } catch (error) {
@@ -131,6 +127,16 @@ export default function PostDetailPage() {
 
   const handleEdit = () => {
     router.push(`/posts/edit/${params.id}`);
+  };
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setImageDimensions({
+      width: img.naturalWidth,
+      height: img.naturalHeight
+    });
+    console.log('📏 Image dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+    setImageError(false);
   };
 
   if (isLoading) {
@@ -159,7 +165,6 @@ export default function PostDetailPage() {
   const isAuthor = user?.id === post.authorId;
   const likesCount = post?.likesCount || post?.likes || 0;
   const imageUrl = getFullImageUrl(post.featuredImage);
-
   const tagNames = post.tags || [];
 
   return (
@@ -173,7 +178,7 @@ export default function PostDetailPage() {
             </Link>
             <Space>
               <Button
-                icon={(likesCount > 0) ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
+                icon={likesCount > 0 ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
                 onClick={handleLike}
               >
                 {likesCount}
@@ -204,27 +209,35 @@ export default function PostDetailPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <article className="bg-white rounded-2xl shadow-sm overflow-hidden border-0">
           
-          {/* Featured Image - Large at the top (PostCard এর মত but bigger) */}
+          {/* Featured Image */}
           {post.featuredImage && !imageError ? (
-            <div className="relative w-full h-96 overflow-hidden bg-gray-100">
+            <div className="relative w-full bg-gray-100 flex justify-center">
               <img 
                 alt={post.title} 
-                src={imageUrl || ''}
-                className={`w-full h-full object-cover transition-all duration-700 ${
-                  isHovered ? 'scale-110' : 'scale-100'
-                }`}
-                onError={() => setImageError(true)}
+                src={imageUrl}
+                className="max-w-full h-auto object-contain"
+                style={{ 
+                  maxHeight: '80vh',
+                  width: 'auto'       
+                }}
+                onError={(e) => {
+                  setImageError(true);
+                }}
+                onLoad={handleImageLoad}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
               />
-              {/* Gradient Overlay */}
-              <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
-                isHovered ? 'opacity-100' : 'opacity-70'
-              }`} />
+              
+              {/* Image Dimensions Badge */}
+              {imageDimensions.width > 0 && (
+                <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                  {imageDimensions.width} x {imageDimensions.height}
+                </div>
+              )}
             </div>
           ) : (
-            /* Gradient Fallback (PostCard এর মত) */
-            <div className={`w-full h-96 bg-gradient-to-br flex flex-col items-center justify-center`}>
+            /* Gradient Fallback */
+            <div className="w-full h-96 bg-gradient-to-br from-purple-400 to-pink-400 flex flex-col items-center justify-center">
               <span className="text-6xl mb-4">📝</span>
               <span className="text-white font-medium text-xl opacity-90 line-clamp-2 px-4 text-center">
                 {post.title}
@@ -234,7 +247,7 @@ export default function PostDetailPage() {
 
           {/* Content Section */}
           <div className="p-8">
-            {/* Author Info - PostCard এর মত */}
+            {/* Author Info */}
             <div className="flex items-center mb-6">
               <Avatar 
                 icon={<UserOutlined />} 
@@ -264,13 +277,11 @@ export default function PostDetailPage() {
             </div>
 
             {/* Title */}
-            <h1 className={`text-4xl font-serif font-bold mb-6 transition-all duration-300 ${
-              isHovered ? 'text-green-600' : 'text-gray-900'
-            }`}>
+            <h1 className="text-4xl font-serif font-bold mb-6 transition-all duration-300" >
               {post.title}
             </h1>
 
-            {/* Content - ReactQuill with bubble theme */}
+            {/* Content - এখন আর error দেবে না */}
             <div className="prose prose-lg max-w-none mb-8">
               <ReactQuill
                 value={post.content}
@@ -298,11 +309,10 @@ export default function PostDetailPage() {
               </div>
             )}
 
-
             {/* Stats */}
             <div className="flex items-center gap-6 pt-6 border-t border-gray-100">
-              <div className="flex items-center gap-2 text-gray-400">
-                {(likesCount > 0) ? (
+              <div className="flex items-center gap-2 text-gray-600">
+                {likesCount > 0 ? (
                   <HeartFilled className="text-red-500 text-xl transition-transform hover:scale-110" />
                 ) : (
                   <HeartOutlined className="text-xl transition-transform hover:scale-110 hover:text-red-500" />
@@ -312,7 +322,7 @@ export default function PostDetailPage() {
                 </span>
               </div>
               
-              <div className="flex items-center gap-2 text-gray-400">
+              <div className="flex items-center gap-2 text-gray-600">
                 <CommentOutlined className="text-xl transition-transform hover:scale-110 hover:text-blue-500" />
                 <span className="text-base font-medium">
                   {post.commentsCount || 0} {post.commentsCount === 1 ? 'comment' : 'comments'}

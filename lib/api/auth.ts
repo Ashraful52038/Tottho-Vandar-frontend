@@ -30,9 +30,6 @@ export interface MessageResponse {
 export const authService = {
     login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
         const response = await axiosInstance.post('/auth/login', credentials);
-
-        console.log('Login API raw response:', response);
-    console.log('Login API data:', response.data);
         return response.data;
     },
 

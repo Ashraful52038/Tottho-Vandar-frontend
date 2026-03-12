@@ -1,5 +1,5 @@
 import { commentService } from "@/lib/api/comments";
-import { Comment } from "@/types/user";
+import { Comment } from "@/types/comments";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { message } from "antd";
 

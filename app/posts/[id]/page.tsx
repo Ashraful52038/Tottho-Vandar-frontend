@@ -1,7 +1,9 @@
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
+import { addComment, deleteComment, fetchComments, likeComment, unlikeComment } from '@/store/slices/commentSlice';
 import { deletePost, fetchPostById, likePost } from '@/store/slices/postSlice';
+import { Comment } from '@/types/comments';
 import { Post } from '@/types/posts';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import {
@@ -12,12 +14,15 @@ import {
   EditOutlined,
   HeartFilled,
   HeartOutlined,
+  SendOutlined,
   UserOutlined
 } from '@ant-design/icons';
 import {
   Alert,
   Avatar,
   Button,
+  Input,
+  List,
   Modal,
   Space,
   Spin,
@@ -31,6 +36,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import 'react-quill/dist/quill.snow.css';
+import { CommentItem } from './components/CommentItem';
 
 const ReactQuill = dynamic(
   () => import('react-quill').then((mod) => mod.default),
@@ -95,14 +101,23 @@ export default function PostDetailPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { currentPost, isLoading, error } = useAppSelector((state) => state.posts);
+  const { comments, isLoading: commentsLoading } = useAppSelector((state) => state.comments);
   const { user } = useAppSelector((state) => state.auth);
+  
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageTimestamp, setImageTimestamp] = useState(Date.now());
+  
+  // Comment states
+  const [commentText, setCommentText] = useState('');
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.id) {
       dispatch(fetchPostById(params.id as string));
+      dispatch(fetchComments(params.id as string));
     }
   }, [dispatch, params.id]);
 
@@ -112,7 +127,7 @@ export default function PostDetailPage() {
       console.log('Post data:', currentPost);
       console.log('Featured image:', currentPost.featuredImage);
       console.log('Image URL:', getFullImageUrl(currentPost.featuredImage));
-      setImageTimestamp(Date.now()); // Update timestamp to force image refresh
+      setImageTimestamp(Date.now());
     }
   }, [currentPost]);
 
@@ -142,6 +157,84 @@ export default function PostDetailPage() {
 
   const handleEdit = () => {
     router.push(`/posts/edit/${params.id}`);
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (!commentText.trim()) {
+      message.warning('Please write a comment');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await dispatch(addComment({
+        content: commentText,
+        postId: params.id as string,
+        parentId: replyTo?.id
+      })).unwrap();
+
+      message.success('Comment added successfully');
+      setCommentText('');
+      setReplyTo(null);
+      
+      dispatch(fetchComments(params.id as string));
+    } catch (error) {
+      message.error('Failed to add comment');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCommentLike = async (commentId: string) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    try {
+      await dispatch(likeComment(commentId)).unwrap();
+      dispatch(fetchComments(params.id as string));
+    } catch (error) {
+      message.error('Failed to like comment');
+    }
+  };
+
+  const handleCommentUnlike = async (commentId: string) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    try {
+      await dispatch(unlikeComment(commentId)).unwrap();
+      dispatch(fetchComments(params.id as string));
+    } catch (error) {
+      message.error('Failed to unlike comment');
+    }
+  };
+
+  const handleCommentDelete = async (commentId: string) => {
+    try {
+      await dispatch(deleteComment(commentId)).unwrap();
+      message.success('Comment deleted');
+      dispatch(fetchComments(params.id as string));
+      setDeleteCommentId(null);
+    } catch (error) {
+      message.error('Failed to delete comment');
+    }
+  };
+
+  const handleReply = (comment: Comment) => {
+    setReplyTo(comment);
+    setCommentText(`@${comment.author.name} `);
+  };
+
+  const cancelReply = () => {
+    setReplyTo(null);
+    setCommentText('');
   };
 
   if (isLoading) {
@@ -175,6 +268,7 @@ export default function PostDetailPage() {
   const imageUrl = baseImageUrl ? `${baseImageUrl}${baseImageUrl.includes('?') ? '&' : '?'}t=${imageTimestamp}` : '';
   
   const tagNames = post.tags || [];
+  const mainComments = comments.filter(c => !c.parentId);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -193,7 +287,7 @@ export default function PostDetailPage() {
                 {likesCount}
               </Button>
               <Button icon={<CommentOutlined />}>
-                {post.commentsCount || 0}
+                {comments.length}
               </Button>
               {isAuthor && (
                 <>
@@ -320,7 +414,7 @@ export default function PostDetailPage() {
               <div className="flex items-center gap-2 text-gray-600">
                 <CommentOutlined className="text-xl transition-transform hover:scale-110 hover:text-blue-500" />
                 <span className="text-base font-medium">
-                  {post.commentsCount || 0} {post.commentsCount === 1 ? 'comment' : 'comments'}
+                  {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
                 </span>
               </div>
             </div>
@@ -330,15 +424,93 @@ export default function PostDetailPage() {
         {/* Comments Section */}
         <div className="mt-8 bg-white rounded-2xl shadow-sm p-8">
           <h3 className="text-2xl font-serif font-semibold mb-4">
-            Comments ({post.commentsCount || 0})
+            Comments ({comments.length})
           </h3>
-          <p className="text-gray-500 text-center py-8">
-            Comments section coming soon...
-          </p>
+          
+          {/* Comment Input */}
+          {user ? (
+            <div className="mb-8">
+              {replyTo && (
+                <div className="mb-2 flex items-center justify-between bg-gray-50 p-2 rounded">
+                  <span className="text-sm text-gray-600">
+                    Replying to <span className="font-semibold">{replyTo.author.name}</span>
+                  </span>
+                  <Button type="link" size="small" onClick={cancelReply}>
+                    Cancel
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <Avatar 
+                  src={user.avatar} 
+                  icon={<UserOutlined />}
+                  size={40}
+                >
+                  {user.name?.charAt(0)}
+                </Avatar>
+                <div className="flex-1">
+                  <Input.TextArea
+                    rows={3}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder={replyTo ? "Write your reply..." : "Write a comment..."}
+                    className="mb-2"
+                  />
+                  <Button 
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={handleCommentSubmit}
+                    loading={submitting}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {replyTo ? 'Post Reply' : 'Post Comment'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 bg-gray-50 rounded-lg mb-8">
+              <p className="text-gray-600 mb-3">Please login to comment</p>
+              <Button type="primary" href="/login" className="bg-green-600 hover:bg-green-700">
+                Login
+              </Button>
+            </div>
+          )}
+          
+          {/* Comments List */}
+          {commentsLoading ? (
+            <div className="text-center py-8">
+              <Spin />
+            </div>
+          ) : mainComments.length > 0 ? (
+            <List
+              itemLayout="vertical"
+              dataSource={mainComments}
+              renderItem={(comment) => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  replies={comments.filter(c => c.parentId === comment.id)}
+                  onReply={handleReply}
+                  onLike={handleCommentLike}
+                  onUnlike={handleCommentUnlike}
+                  onDelete={handleCommentDelete}
+                  currentUser={user}
+                  isAuthor={isAuthor}
+                />
+              )}
+            />
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <CommentOutlined className="text-4xl text-gray-400 mb-3" />
+              <p className="text-gray-500 text-lg">No comments yet</p>
+              <p className="text-gray-400">Be the first to share your thoughts!</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Post Confirmation Modal */}
       <Modal
         title="Delete Post"
         open={deleteModalOpen}
@@ -350,6 +522,19 @@ export default function PostDetailPage() {
       >
         <p>Are you sure you want to delete this post?</p>
         <p className="text-red-500">This action cannot be undone!</p>
+      </Modal>
+
+      {/* Delete Comment Confirmation Modal */}
+      <Modal
+        title="Delete Comment"
+        open={!!deleteCommentId}
+        onOk={() => deleteCommentId && handleCommentDelete(deleteCommentId)}
+        onCancel={() => setDeleteCommentId(null)}
+        okText="Delete"
+        okButtonProps={{ danger: true }}
+        cancelText="Cancel"
+      >
+        <p>Are you sure you want to delete this comment?</p>
       </Modal>
     </div>
   );

@@ -39,18 +39,4 @@ export interface ResetPasswordRequest {
     newPassword: string;
 }
 
-export interface Comment {
-    id: string;
-    content: string;
-    authorId: string;
-    author?: User;
-    postId: string;
-    likes: number;
-    likesCount?: number;
-    createdAt: string;
-    updatedAt: string;
-    isLiked?: boolean;
-    parentId?: string;
-    replies?: Comment[];
-}
 

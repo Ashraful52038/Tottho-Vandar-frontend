@@ -20,14 +20,6 @@ axiosInstance.interceptors.request.use(
                 config.headers.Authorization = `Bearer ${token}`;
             }
         }
-        console.log('🚀 [Axios] Request:', {
-            method: config.method?.toUpperCase(),
-            url: config.url,
-            baseURL: config.baseURL,
-            data: config.data,
-            headers: config.headers
-        });
-
         return config;
     },
     (error)=>{
@@ -46,12 +38,6 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     async(error)=>{
-
-        console.error('❌ [Axios] Response Error:', {
-            status: error.response?.status,
-            url: error.config?.url,
-            data: error.response?.data
-        });
         const originalRequest = error.config
 
         if(error.response?.status== 401 && !originalRequest._retry){
@@ -60,6 +46,7 @@ axiosInstance.interceptors.response.use(
             if(typeof window !== 'undefined'){
                 localStorage.removeItem('token');
             }
+            window.location.href = '/login';
         }
 
         return Promise.reject(error);

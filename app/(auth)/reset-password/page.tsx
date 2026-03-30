@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
         newPassword: values.newPassword,
       })).unwrap();
       
-      router.push('/login');
+      router.push('/?openLogin=true');
       
     } catch (error: any) {
       console.error('Reset password error:', error);

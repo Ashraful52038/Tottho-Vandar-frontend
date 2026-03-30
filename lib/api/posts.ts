@@ -10,16 +10,18 @@ export interface PostsResponse {
 
 export const postService = {
     getPosts: async (filters?: PostFilters): Promise<PostsResponse> => {
-    const response = await axiosInstance.get('/posts', { 
-        params: {
+    const params: any = { 
             page: filters?.page || 1,
             limit: filters?.limit || 10,
-            tag: filters?.tag,
-            author: filters?.author,
-            search: filters?.search,
             sortBy: filters?.sortBy
-        }
-        });
+        };
+        if (filters?.tag) params.tag = filters.tag;
+        if (filters?.tagIds) params.tagIds = filters.tagIds;
+        if (filters?.author) params.author = filters.author;
+        if (filters?.search) params.search = filters.search;
+        if (filters?.status) params.status = filters.status;
+
+        const response = await axiosInstance.get('/posts', { params });
         return response.data;
     },
 

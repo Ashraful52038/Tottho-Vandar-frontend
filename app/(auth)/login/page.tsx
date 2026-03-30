@@ -12,8 +12,8 @@ const {Title , Text} = Typography;
 
 interface LoginModalProps {
     isOpen: boolean;
-    onClose: () => void;
-    onSignUpClick: () => void;
+    onClose?: () => void;
+    onSignUpClick?: () => void;
 }
 
 export default function LoginModal({isOpen, onClose, onSignUpClick}: LoginModalProps){
@@ -33,7 +33,9 @@ export default function LoginModal({isOpen, onClose, onSignUpClick}: LoginModalP
 
     useEffect(()=>{
         if (isAuthenticated) {
-        onClose();
+        if (onClose && typeof onClose === 'function') {
+                onClose();
+            }
         router.push('/feed');
         }
     },[isAuthenticated, router, onClose]);

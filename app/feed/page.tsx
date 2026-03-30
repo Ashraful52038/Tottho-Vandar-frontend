@@ -3,28 +3,24 @@
 import Navbar from '@/components/layout/Navbar';
 import PostCard from '@/components/posts/PostCard';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
-import { fetchPosts } from '@/store/slices/postSlice';
+import { fetchPosts, fetchTags } from '@/store/slices/postSlice';
+import { Tag as TagType } from '@/types/tags';
 import {
   BookOutlined,
   ClockCircleOutlined,
+  CloseOutlined,
   FireOutlined,
   ReloadOutlined,
   RiseOutlined,
   UserOutlined,
   WarningOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Empty, Select, Spin, Tabs, message } from 'antd';
+import { Avatar, Button, Empty, Select, Space, Spin, Tabs, Tag, message } from 'antd';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const { Option } = Select;
-
-const TOPICS = [
-  'Programming', 'Technology', 'AI', 'Web Development',
-  'Mobile Development', 'Cloud Computing', 'DevOps', 'Cybersecurity',
-  'Data Science', 'Machine Learning', 'UI/UX', 'Startup'
-];
 
 // Featured Authors
 const FEATURED_AUTHORS = [
@@ -37,14 +33,13 @@ const FEATURED_AUTHORS = [
 export default function FeedPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { posts: storePosts, isLoading, error } = useAppSelector((state) => state.posts);
+  const { posts: storePosts, isLoading, error, tags } = useAppSelector((state) => state.posts);
   const { user } = useAppSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [retryCount, setRetryCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  
-  // ✅ Solution: Client-side only rendering
+
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -75,16 +70,23 @@ export default function FeedPage() {
 
   useEffect(() => {
     if (isMounted) {
+      dispatch(fetchTags());
+    }
+  }, [dispatch, isMounted]);
+
+  useEffect(() => {
+    if (isMounted) {
       loadPosts();
     }
-  }, [dispatch, retryCount, selectedTopic, searchQuery, isMounted]);
+  }, [dispatch, retryCount, selectedTagIds, searchQuery, isMounted]);
 
   const loadPosts = async () => {
     try {
+      const tagIdsParam = selectedTagIds.length ? selectedTagIds.join(',') : undefined;
       await dispatch(fetchPosts({
         page: 1,
         limit: 10,
-        tag: selectedTopic || undefined,
+        tagIds: tagIdsParam,
         search: searchQuery || undefined,
         sortBy: 'latest'
       })).unwrap();
@@ -102,8 +104,17 @@ export default function FeedPage() {
     setSearchQuery(query);
   };
 
-  const handleTopicSelect = (topic: string) => {
-    setSelectedTopic(topic);
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSelectedTagIds([]);
+    setSearchQuery('');
   };
 
   const handleWritePost = () => {
@@ -122,10 +133,6 @@ export default function FeedPage() {
     router.push('/login?redirect=/feed');
   };
 
-  const handleSignup = () => {
-    router.push('/signup?redirect=/feed');
-  };
-
   // Show loading until mounted
   if (!isMounted) {
     return (
@@ -142,8 +149,8 @@ export default function FeedPage() {
         <Navbar
           onSearch={handleSearch}
           searchQuery={searchQuery}
-          onTopicSelect={handleTopicSelect}
-          selectedTopic={selectedTopic}
+          onTopicSelect={() => {}}
+          selectedTopic=""
         />
         <div className="flex items-center justify-center min-h-screen px-4">
           <div className="text-center">
@@ -161,8 +168,8 @@ export default function FeedPage() {
       <Navbar
         onSearch={handleSearch}
         searchQuery={searchQuery}
-        onTopicSelect={handleTopicSelect}
-        selectedTopic={selectedTopic}
+        onTopicSelect={() => {}}
+        selectedTopic=""
       />
 
       {/* Main Content */}
@@ -202,20 +209,49 @@ export default function FeedPage() {
           <div className="card-bg rounded-lg shadow-sm p-3 sm:p-4 transition-colors duration-300">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
               <Select
+                mode='multiple'
                 placeholder="Filter by topic"
-                style={{ width: '100%', maxWidth: '200px' }}
-                value={selectedTopic}
-                onChange={setSelectedTopic}
+                style={{ width: '100%', maxWidth: '300px' }}
+                value={selectedTagIds}
+                onChange={(values) => setSelectedTagIds(values as string[])}
                 allowClear
+                maxTagCount="responsive"
                 popupClassName="dark:bg-gray-800"
                 className="dark:text-white w-full sm:w-auto"
               >
-                {TOPICS.map(topic => (
-                  <Option key={topic} value={topic} className="dark:text-white">
-                    {topic}
+                {tags.map((tag: TagType)=> (
+                  <Option key={tag.id} value={tag.id} className="dark:text-white">
+                    {tag.name}
                   </Option>
                 ))}
               </Select>
+
+               {/* Active Filters */}
+              {(selectedTagIds.length > 0 || searchQuery) && (
+                <Space size={4} wrap>
+                  {selectedTagIds.map(id => {
+                    const tag = tags.find((t: TagType)=> t.id === id);
+                    return tag ? (
+                      <Tag
+                        key={id}
+                        closable
+                        onClose={() => toggleTag(id)}
+                        className="bg-green-100 text-green-800 border-green-200"
+                      >
+                        {tag.name}
+                      </Tag>
+                    ) : null;
+                  })}
+                  {searchQuery && (
+                    <Tag closable onClose={() => setSearchQuery('')} className="bg-blue-100 text-blue-800">
+                      Search: {searchQuery}
+                    </Tag>
+                  )}
+                  <Button type="link" size="small" onClick={clearAllFilters} icon={<CloseOutlined />}>
+                    Clear all
+                  </Button>
+                </Space>
+              )}
               
               <div className="flex gap-2 w-full sm:w-auto justify-start">
                 <Button 
@@ -269,7 +305,7 @@ export default function FeedPage() {
                                 No stories found
                               </h3>
                               <p className="paragraph-color text-sm sm:text-base mb-4 px-4">
-                                {searchQuery || selectedTopic 
+                                {searchQuery || selectedTagIds.length > 0
                                   ? "Try adjusting your search or filter to find what you're looking for."
                                   : "Be the first to write a story!"}
                               </p>
@@ -338,17 +374,17 @@ export default function FeedPage() {
                 Recommended topics
               </h2>
               <div className="flex flex-wrap gap-2">
-                {TOPICS.slice(0, 8).map(topic => (
+                {tags.slice(0, 12).map((tag:TagType) => (
                   <button
-                    key={topic}
-                    onClick={() => setSelectedTopic(topic)}
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.id)}
                     className={`px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-medium transition-colors
-                      ${selectedTopic === topic 
+                      ${selectedTagIds.includes(tag.id) 
                         ? 'bg-green-600 text-white dark:bg-green-700' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                       }`}
                   >
-                    {topic}
+                    {tag.name}
                   </button>
                 ))}
               </div>

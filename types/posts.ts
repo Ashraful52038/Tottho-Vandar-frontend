@@ -43,6 +43,7 @@ export interface PostFilters {
   page?: number;
   limit?: number;
   tag?: string;
+  tagIds?: string;
   author?: string;
   search?: string;
   status?: 'draft' | 'published' | 'all';

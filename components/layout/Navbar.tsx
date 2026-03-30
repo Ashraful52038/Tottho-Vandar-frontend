@@ -5,20 +5,20 @@ import SignupModal from '@/app/(auth)/signup/page';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { logout } from '@/store/slices/authSlice';
 import {
-    BellOutlined,
-    EditOutlined,
-    GlobalOutlined,
-    LogoutOutlined,
-    MenuOutlined,
-    MoonOutlined,
-    SearchOutlined,
-    SettingOutlined,
-    SunOutlined,
-    UserOutlined
+  BellOutlined,
+  EditOutlined,
+  GlobalOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+  MoonOutlined,
+  SearchOutlined,
+  SettingOutlined,
+  SunOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import { Avatar, Badge, Button, Drawer, Dropdown, Input, MenuProps, message } from 'antd';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface NavbarProps {
@@ -40,6 +40,7 @@ export default function Navbar({ onSearch, searchQuery = '', onTopicSelect, sele
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const searchParams = useSearchParams();
   
   // State declarations
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -63,6 +64,17 @@ export default function Navbar({ onSearch, searchQuery = '', onTopicSelect, sele
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+        const shouldOpenLogin = searchParams.get('openLogin') === 'true';
+        if (shouldOpenLogin) {
+            setIsLoginOpen(true);
+            // প্যারামিটার সরান (URL পরিষ্কার)
+            const url = new URL(window.location.href);
+            url.searchParams.delete('openLogin');
+            window.history.replaceState({}, '', url.toString());
+        }
+    }, [searchParams]);
 
   // Dark mode initialization
   useEffect(() => {

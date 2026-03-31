@@ -4,6 +4,7 @@ import LoginModal from '@/app/(auth)/login/page';
 import SignupModal from '@/app/(auth)/signup/page';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { logout } from '@/store/slices/authSlice';
+import { Tag as TagType } from '@/types/tags';
 import {
   BellOutlined,
   EditOutlined,
@@ -24,8 +25,11 @@ import { useEffect, useState } from 'react';
 interface NavbarProps {
   onSearch?: (query: string) => void;
   onTopicSelect?: (topic: string) => void;
+  onTagSelect?: (tagId: string) => void;
   selectedTopic?: string;
   searchQuery?: string;
+  tags?: TagType[];
+  selectedTagIds?: string[];
 }
 
 // Mock notifications
@@ -36,7 +40,7 @@ const MOCK_NOTIFICATIONS = [
   { id: 4, type: 'mention', message: 'Emma mentioned you in a comment', time: '1 day ago', read: true },
 ];
 
-export default function Navbar({ onSearch, searchQuery = '', onTopicSelect, selectedTopic }: NavbarProps) {
+export default function Navbar({ onSearch, searchQuery = '',tags = [], onTagSelect, selectedTagIds = []}: NavbarProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
@@ -69,7 +73,6 @@ export default function Navbar({ onSearch, searchQuery = '', onTopicSelect, sele
         const shouldOpenLogin = searchParams.get('openLogin') === 'true';
         if (shouldOpenLogin) {
             setIsLoginOpen(true);
-            // প্যারামিটার সরান (URL পরিষ্কার)
             const url = new URL(window.location.href);
             url.searchParams.delete('openLogin');
             window.history.replaceState({}, '', url.toString());
@@ -270,12 +273,6 @@ export default function Navbar({ onSearch, searchQuery = '', onTopicSelect, sele
       router.push('/posts/create');
     }
   };
-
-  const TOPICS = [
-    'Programming', 'Technology', 'AI', 'Web Development',
-    'Mobile Development', 'Cloud Computing', 'DevOps', 'Cybersecurity',
-    'Data Science', 'Machine Learning', 'UI/UX', 'Startup'
-  ];
 
   return (
     <>
@@ -665,22 +662,22 @@ export default function Navbar({ onSearch, searchQuery = '', onTopicSelect, sele
           <div>
             <h3 className="font-medium heading-color mb-2 px-2">Topics</h3>
             <div className="flex flex-wrap gap-2">
-              {TOPICS.slice(0, 6).map(topic => (
+              {(tags || []).slice(0, 6).map((tag) => (
                 <button
-                  key={topic}
+                  key={tag.id}
                   onClick={() => {
-                    if (onTopicSelect) {
-                      onTopicSelect(topic);
+                    if (onTagSelect) {
+                      onTagSelect(tag.id);
                     }
                     setSidebarDrawerOpen(false);
                   }}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors
-                    ${selectedTopic === topic 
+                    ${selectedTagIds.includes(tag.id)
                       ? 'bg-green-600 text-white dark:bg-green-700' 
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
                     }`}
                 >
-                  {topic}
+                  {tag.name}
                 </button>
               ))}
             </div>

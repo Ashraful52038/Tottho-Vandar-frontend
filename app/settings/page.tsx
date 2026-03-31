@@ -3,14 +3,15 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { changePassword, forgetPassword } from '@/store/slices/authSlice';
 import {
-  CheckCircleFilled,
-  KeyOutlined,
-  LockOutlined,
-  MailOutlined,
-  QuestionCircleOutlined,
-  SafetyOutlined,
-  SendOutlined,
-  UserOutlined
+    ArrowLeftOutlined,
+    CheckCircleFilled,
+    KeyOutlined,
+    LockOutlined,
+    MailOutlined,
+    QuestionCircleOutlined,
+    SafetyOutlined,
+    SendOutlined,
+    UserOutlined
 } from '@ant-design/icons';
 import { Avatar, Button, Card, Collapse, Form, Input, message, Tabs, Typography } from 'antd';
 import { useRouter } from 'next/navigation';
@@ -131,6 +132,18 @@ export default function SettingsPage() {
 
                 {/* Profile Summary Card */}
                 <Card className="mb-8 shadow-lg rounded-2xl border-0 overflow-hidden">
+                    {/* ✅ Back Button Row */}
+                    <div className="flex justify-between items-start mb-4">
+                        <Button
+                            type="text"
+                            icon={<ArrowLeftOutlined />}
+                            onClick={() => router.back()}
+                            className="flex items-center gap-1 text-gray-600 hover:text-blue-600"
+                        >
+                            Back
+                        </Button>
+                        <div></div>
+                    </div>
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-6 p-4">
                         <Avatar
                             size={96}
@@ -152,6 +165,8 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </Card>
+
+                <div className="h-3"></div>
 
                 {/* Main Card with Tabs and FAQ Sidebar */}
                 <Card className="shadow-lg rounded-2xl border-0 overflow-hidden">

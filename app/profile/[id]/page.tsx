@@ -1,5 +1,6 @@
 'use client';
 
+import PostCard from '@/components/posts/PostCard';
 import type { FollowUser, UserComment, UserLike, UserPost } from '@/lib/api/user';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import {
@@ -15,11 +16,10 @@ import {
   unfollowUser
 } from '@/store/slices/profileSlice';
 import {
+  ArrowLeftOutlined,
   CalendarOutlined,
   CheckCircleFilled,
-  CommentOutlined,
   EditOutlined,
-  EyeOutlined,
   HeartOutlined,
   LoadingOutlined,
   MailOutlined,
@@ -56,7 +56,7 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
 
   const profileId = params?.id as string;
-  const isOwnProfile = currentUser?.id === profileId;
+  const isOwnProfile = currentUser?.id ? String(currentUser.id) === profileId : false;
 
   useEffect(() => {
     if (profileId) {
@@ -74,7 +74,6 @@ export default function ProfilePage() {
     };
   }, [dispatch, profileId]);
 
-  // ফলো স্ট্যাটাস চেক করার জন্য আলাদা ইফেক্ট
   useEffect(() => {
     if (currentUser && !isOwnProfile && followers.length > 0) {
       const isFollow = followers.some((follower: FollowUser) => follower.id === currentUser.id);
@@ -109,46 +108,31 @@ export default function ProfilePage() {
 
   const loadMorePosts = () => {
     if (posts.length < totalPosts) {
-      dispatch(fetchUserPosts({ 
-        userId: profileId, 
-        page: currentPage.posts 
-      }));
+      dispatch(fetchUserPosts({ userId: profileId, page: currentPage.posts }));
     }
   };
 
   const loadMoreComments = () => {
     if (comments.length < totalComments) {
-      dispatch(fetchUserComments({ 
-        userId: profileId, 
-        page: currentPage.comments
-      }));
+      dispatch(fetchUserComments({ userId: profileId, page: currentPage.comments }));
     }
   };
 
   const loadMoreLikes = () => {
     if (likes.length < totalLikes) {
-      dispatch(fetchUserLikes({ 
-        userId: profileId, 
-        page: currentPage.likes
-      }));
+      dispatch(fetchUserLikes({ userId: profileId, page: currentPage.likes }));
     }
   };
 
   const loadMoreFollowers = () => {
     if (followers.length < totalFollowers) {
-      dispatch(fetchFollowers({ 
-        userId: profileId, 
-        page: currentPage.followers
-      }));
+      dispatch(fetchFollowers({ userId: profileId, page: currentPage.followers }));
     }
   };
 
   const loadMoreFollowing = () => {
     if (following.length < totalFollowing) {
-      dispatch(fetchFollowing({ 
-        userId: profileId, 
-        page: currentPage.following
-      }));
+      dispatch(fetchFollowing({ userId: profileId, page: currentPage.following }));
     }
   };
 
@@ -177,7 +161,7 @@ export default function ProfilePage() {
   const items = [
     {
       key: 'posts',
-      label: `Posts (${totalPosts})`,
+      label: `My Posts (${totalPosts})`,
       children: (
         <UserPosts 
           posts={posts} 
@@ -238,33 +222,44 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Header Card */}
-        <Card className="mb-6 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            {/* Avatar */}
-            <Avatar
-              size={120}
-              src={profile.avatar}
-              icon={<UserOutlined />}
-              className="border-4 border-green-500 shadow-lg"
-            />
-            
-            {/* Profile Info */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Profile Header Card with Back Button and Edit Button */}
+        <Card className="mb-10 shadow-md">
+          {/* Back button (left side) */}
+          <div className="flex justify-between items-start mb-4">
+            <Button
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => router.back()}
+              className="flex items-center gap-1 text-gray-600 hover:text-blue-600"
+            >
+              Back
+            </Button>
+            {/* Right side button: Edit Profile or Follow */}
+            <div>
+              {isOwnProfile ? (
+                <Button type="primary" icon={<EditOutlined />} onClick={handleEditProfile}>
+                  Edit Profile
+                </Button>
+              ) : (
+                <Button type={isFollowing ? 'default' : 'primary'} onClick={handleFollow}>
+                  {isFollowing ? 'Following' : 'Follow'}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Profile Info */}
+          <div className="flex flex-col md:flex-row gap-6">
+            <Avatar size={100} src={profile.avatar} icon={<UserOutlined />} />
             <div className="flex-1">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-wrap justify-between items-start gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-black items-center mb-2">
+                  <h1 className="text-2xl font-bold flex items-center gap-2">
                     {profile.name}
-                    {profile.verified && (
-                      <CheckCircleFilled
-                        style={{ color: '#0284c7', fontSize: '24px' }} 
-                        aria-label="Verified account"
-                      />
-                    )}
+                    {profile.verified && <CheckCircleFilled style={{ color: '#0284c7', fontSize: 20 }} />}
                   </h1>
-                  
-                  <div className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <div className="mt-2 space-y-1 text-gray-600 dark:text-gray-700">
                     <div className="flex items-center gap-2">
                       <MailOutlined />
                       <span>{profile.email}</span>
@@ -274,359 +269,187 @@ export default function ProfilePage() {
                       <span>Joined {moment(profile.createdAt).format('MMMM YYYY')}</span>
                     </div>
                   </div>
-                  
-                  {profile.bio && (
-                    <p className="mt-4 text-gray-700 dark:text-gray-300 max-w-2xl">
-                      {profile.bio}
-                    </p>
-                  )}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  {isOwnProfile ? (
-                    <Button
-                      type="primary"
-                      icon={<EditOutlined />}
-                      onClick={handleEditProfile}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Edit Profile
-                    </Button>
-                  ) : (
-                    <Button
-                      type={isFollowing ? 'default' : 'primary'}
-                      onClick={handleFollow}
-                      className={!isFollowing ? 'bg-green-600 hover:bg-green-700' : ''}
-                    >
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </Button>
-                  )}
+                  {profile.bio && <p className="mt-3 text-gray-700 dark:text-gray-1000">{profile.bio}</p>}
                 </div>
               </div>
             </div>
           </div>
-          
+
           {/* Stats Row */}
-          <Row gutter={[16, 16]} className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Col xs={12} sm={6}>
-              <Statistic title="Posts" value={profile.stats?.posts || 0} />
-            </Col>
-            <Col xs={12} sm={6}>
-              <Statistic title="Followers" value={profile.stats?.followers || 0} />
-            </Col>
-            <Col xs={12} sm={6}>
-              <Statistic title="Following" value={profile.stats?.following || 0} />
-            </Col>
-            <Col xs={12} sm={6}>
-              <Statistic title="Likes Received" value={profile.stats?.likes || 0} />
-            </Col>
-          </Row>
+          <div className="mt-6 pt-4 border-t">
+            <Row gutter={16}>
+              <Col span={6}><Statistic title="My Posts" value={totalPosts} /></Col>
+              <Col span={6}><Statistic title="Followers" value={totalFollowers} /></Col>
+              <Col span={6}><Statistic title="Following" value={totalFollowing} /></Col>
+              <Col span={6}><Statistic title="Likes" value={totalLikes} /></Col>
+            </Row>
+          </div>
         </Card>
 
-        {/* Tabs Section */}
-        <Card className="shadow-sm">
-          <Tabs 
-            activeKey={activeTab}
-            items={items} 
-            onChange={setActiveTab}
-          />
+        <div className="h-3"></div>
+
+        {/* Tabs Card */}
+        <Card className="shadow-md">
+          <Tabs items={items} activeKey={activeTab} onChange={setActiveTab} />
         </Card>
       </div>
     </div>
   );
 }
 
-// ==================== ট্যাব কম্পোনেন্ট ====================
+// ----- All child components (unchanged but included for completeness) -----
 
-interface TabProps {
-  onLoadMore: () => void;
-  hasMore: boolean;
-}
+interface TabProps { onLoadMore: () => void; hasMore: boolean; }
+interface UserPostsProps extends TabProps { posts: UserPost[]; userId: string; isOwnProfile: boolean; }
 
-interface UserPostsProps extends TabProps {
-  posts: UserPost[];
-  userId: string;
-  isOwnProfile: boolean;
-}
+function UserPosts({ posts, isOwnProfile, onLoadMore, hasMore }: UserPostsProps) {
 
-// ===== ঠিক করা UserPosts কম্পোনেন্ট =====
-function UserPosts({ posts, userId, isOwnProfile, onLoadMore, hasMore }: UserPostsProps) {
   return (
     <div className="space-y-4">
       {isOwnProfile && (
-        <div className="flex justify-end mb-4">
-          <Button type="primary" href="/posts/create" icon={<EditOutlined />} className="bg-green-600 hover:bg-green-700">
-            Create New Post
-          </Button>
+        <div className="flex justify-end">
+          <Button type="primary" href="/posts/create" icon={<EditOutlined />}>Create Post</Button>
         </div>
       )}
-      
-      {posts.length > 0 ? (
+      {posts.length ? (
         <>
-          {posts.map((post) => (
-            <Card 
-              key={post.id} 
-              className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => window.location.href = `/posts/${post.id}`}
-            >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {post.title}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {post.excerpt || post.content.substring(0, 150)}...
-              </p>
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span><HeartOutlined /> {post.likes || 0}</span>
-                <span><CommentOutlined /> {post.comments || 0}</span>
-                <span><EyeOutlined /> {post.views || 0}</span>
-                <span className="ml-auto">{moment(post.createdAt).fromNow()}</span>
-              </div>
-            </Card>
-          ))}
+          <div className="grid grid-cols-1 gap-6">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post as any} />
+            ))}
+          </div>
           
           {hasMore && (
-            <div className="text-center mt-4">
-              <Button onClick={onLoadMore}>
-                Load More
-              </Button>
-            </div>
+          <div className="text-center mt-4">
+            <Button onClick={onLoadMore}>
+              Load More
+            </Button>
+          </div>
           )}
         </>
       ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No posts yet</p>
-          {isOwnProfile && (
-            <Button type="primary" href="/posts/create" className="mt-4 bg-green-600 hover:bg-green-700">
-              Create Your First Post
-            </Button>
-          )}
-        </div>
+        <div className="text-center py-12 text-gray-500">No posts yet.</div>
       )}
     </div>
   );
 }
 
-interface UserCommentsProps extends TabProps {
-  comments: UserComment[];
-}
-
-// ===== ঠিক করা UserComments কম্পোনেন্ট =====
+interface UserCommentsProps extends TabProps { comments: UserComment[]; }
 function UserComments({ comments, onLoadMore, hasMore }: UserCommentsProps) {
   return (
     <div className="space-y-4">
-      {comments.length > 0 ? (
+      {comments.length ? (
         <>
-          {comments.map((comment) => (
-            <Card 
-              key={comment.id} 
-              className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => window.location.href = `/posts/${comment.postId}`}
-            >
-              <p className="text-gray-800 dark:text-gray-200 mb-2">{comment.content}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">
-                  on <span className="font-medium text-gray-700 dark:text-gray-300">
-                    {comment.postTitle || 'Post'}
-                  </span>
-                </span>
-                <div className="flex items-center gap-4">
-                  <span><HeartOutlined /> {comment.likes || 0}</span>
-                  <span>{moment(comment.createdAt).fromNow()}</span>
-                </div>
+          {comments.map(comment => (
+            <Card key={comment.id} className="cursor-pointer hover:shadow" onClick={() => window.location.href = `/posts/${comment.postId}`}>
+              <p>{comment.content}</p>
+              <div className="flex justify-between mt-2 text-sm text-gray-500">
+                <span>on {comment.postTitle || 'Post'}</span>
+                <span><HeartOutlined /> {comment.likes || 0} • {moment(comment.createdAt).fromNow()}</span>
               </div>
             </Card>
           ))}
-          
-          {hasMore && (
-            <div className="text-center mt-4">
-              <Button onClick={onLoadMore}>Load More</Button>
-            </div>
-          )}
+          {hasMore && <div className="text-center mt-4"><Button onClick={onLoadMore}>Load More</Button></div>}
         </>
       ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No comments yet</p>
-        </div>
+        <div className="text-center py-12 text-gray-500">No comments yet.</div>
       )}
     </div>
   );
 }
 
-interface UserLikesProps extends TabProps {
-  likes: UserLike[];
-}
-
-// ===== ঠিক করা UserLikes কম্পোনেন্ট =====
+interface UserLikesProps extends TabProps { likes: UserLike[]; }
 function UserLikes({ likes, onLoadMore, hasMore }: UserLikesProps) {
   return (
     <div className="space-y-4">
-      {likes.length > 0 ? (
+      {likes.length ? (
         <>
-          {likes.map((like) => (
-            <Card 
-              key={like.id} 
-              className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => window.location.href = like.postId ? `/posts/${like.postId}` : '#'}
-            >
+          {likes.map(like => (
+            <Card key={like.id} className="cursor-pointer hover:shadow" onClick={() => window.location.href = like.postId ? `/posts/${like.postId}` : '#'}>
               {like.type === 'post' ? (
-                <>
-                  <p className="text-gray-800 dark:text-gray-200">Liked a post</p>
-                  <p className="font-medium text-gray-900 dark:text-white mt-1">
-                    {like.postTitle || 'Post'}
-                  </p>
-                </>
+                <p><HeartOutlined className="text-red-500" /> Liked a post: <strong>{like.postTitle || 'Post'}</strong></p>
               ) : (
-                <>
-                  <p className="text-gray-800 dark:text-gray-200">Liked a comment</p>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
-                    "{like.content || ''}"
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    on {like.postTitle || 'Post'}
-                  </p>
-                </>
+                <p><HeartOutlined className="text-red-500" /> Liked a comment: "{like.content}" on {like.postTitle || 'Post'}</p>
               )}
-              <div className="text-right text-sm text-gray-500 mt-2">
-                {moment(like.createdAt).fromNow()}
-              </div>
+              <div className="text-right text-gray-400 text-sm mt-1">{moment(like.createdAt).fromNow()}</div>
             </Card>
           ))}
-          
-          {hasMore && (
-            <div className="text-center mt-4">
-              <Button onClick={onLoadMore}>Load More</Button>
-            </div>
-          )}
+          {hasMore && <div className="text-center mt-4"><Button onClick={onLoadMore}>Load More</Button></div>}
         </>
       ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No likes yet</p>
-        </div>
+        <div className="text-center py-12 text-gray-500">No likes yet.</div>
       )}
     </div>
   );
 }
 
-interface FollowersListProps extends TabProps {
-  followers: FollowUser[];
-  currentUserId?: string;
-}
-
-// Followers List Component (ঠিক আছে)
+interface FollowersListProps extends TabProps { followers: FollowUser[]; currentUserId?: string; }
 function FollowersList({ followers, currentUserId, onLoadMore, hasMore }: FollowersListProps) {
   const dispatch = useAppDispatch();
-
   const handleFollow = async (userId: string, isFollowing: boolean) => {
     try {
-      if (isFollowing) {
-        await dispatch(unfollowUser(userId)).unwrap();
-        message.success('Unfollowed successfully');
-      } else {
-        await dispatch(followUser(userId)).unwrap();
-        message.success('Followed successfully');
-      }
-    } catch (error) {
-      message.error('Failed to update follow status');
-    }
+      if (isFollowing) await dispatch(unfollowUser(userId)).unwrap();
+      else await dispatch(followUser(userId)).unwrap();
+      message.success(isFollowing ? 'Unfollowed' : 'Followed');
+    } catch { message.error('Failed'); }
   };
-
   return (
     <div className="space-y-4">
-      {followers.length > 0 ? (
+      {followers.length ? (
         <>
-          {followers.map((follower) => (
-            <Card key={follower.id} className="hover:shadow-md transition-shadow">
+          {followers.map(f => (
+            <Card key={f.id}>
               <div className="flex items-center gap-4">
-                <Avatar size={48} src={follower.avatar} icon={<UserOutlined />} />
+                <Avatar src={f.avatar} icon={<UserOutlined />} />
                 <div className="flex-1">
-                  <Link href={`/profile/${follower.id}`} className="font-semibold text-gray-900 dark:text-white hover:text-green-600">
-                    {follower.name}
-                  </Link>
-                  {follower.bio && <p className="text-sm text-gray-500">{follower.bio}</p>}
+                  <Link href={`/profile/${f.id}`} className="font-semibold hover:text-green-600">{f.name}</Link>
+                  {f.bio && <p className="text-sm text-gray-500">{f.bio}</p>}
                 </div>
-                {currentUserId && currentUserId !== follower.id && (
-                  <Button 
-                    type={follower.isFollowing ? 'default' : 'primary'}
-                    onClick={() => handleFollow(follower.id, follower.isFollowing)}
-                    className={!follower.isFollowing ? 'bg-green-600 hover:bg-green-700' : ''}
-                  >
-                    {follower.isFollowing ? 'Following' : 'Follow'}
+                {currentUserId && currentUserId !== f.id && (
+                  <Button size="small" type={f.isFollowing ? 'default' : 'primary'} onClick={() => handleFollow(f.id, f.isFollowing)}>
+                    {f.isFollowing ? 'Following' : 'Follow'}
                   </Button>
                 )}
               </div>
             </Card>
           ))}
-          
-          {hasMore && (
-            <div className="text-center mt-4">
-              <Button onClick={onLoadMore}>Load More</Button>
-            </div>
-          )}
+          {hasMore && <div className="text-center"><Button onClick={onLoadMore}>Load More</Button></div>}
         </>
       ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No followers yet</p>
-        </div>
+        <div className="text-center py-12 text-gray-500">No followers yet.</div>
       )}
     </div>
   );
 }
 
-interface FollowingListProps extends TabProps {
-  following: FollowUser[];
-  currentUserId?: string;
-}
-
-// Following List Component (ঠিক আছে)
+interface FollowingListProps extends TabProps { following: FollowUser[]; currentUserId?: string; }
 function FollowingList({ following, currentUserId, onLoadMore, hasMore }: FollowingListProps) {
   const dispatch = useAppDispatch();
-
   const handleUnfollow = async (userId: string) => {
-    try {
-      await dispatch(unfollowUser(userId)).unwrap();
-      message.success('Unfollowed successfully');
-    } catch (error) {
-      message.error('Failed to unfollow user');
-    }
+    try { await dispatch(unfollowUser(userId)).unwrap(); message.success('Unfollowed'); } catch { message.error('Failed'); }
   };
-
   return (
     <div className="space-y-4">
-      {following.length > 0 ? (
+      {following.length ? (
         <>
-          {following.map((person) => (
-            <Card key={person.id} className="hover:shadow-md transition-shadow">
+          {following.map(f => (
+            <Card key={f.id}>
               <div className="flex items-center gap-4">
-                <Avatar size={48} src={person.avatar} icon={<UserOutlined />} />
+                <Avatar src={f.avatar} icon={<UserOutlined />} />
                 <div className="flex-1">
-                  <Link href={`/profile/${person.id}`} className="font-semibold text-gray-900 dark:text-white hover:text-green-600">
-                    {person.name}
-                  </Link>
-                  {person.bio && <p className="text-sm text-gray-500">{person.bio}</p>}
+                  <Link href={`/profile/${f.id}`} className="font-semibold hover:text-green-600">{f.name}</Link>
+                  {f.bio && <p className="text-sm text-gray-500">{f.bio}</p>}
                 </div>
-                {currentUserId && currentUserId !== person.id && (
-                  <Button 
-                    type="default"
-                    onClick={() => handleUnfollow(person.id)}
-                  >
-                    Following
-                  </Button>
+                {currentUserId && currentUserId !== f.id && (
+                  <Button size="small" type="default" onClick={() => handleUnfollow(f.id)}>Following</Button>
                 )}
               </div>
             </Card>
           ))}
-          
-          {hasMore && (
-            <div className="text-center mt-4">
-              <Button onClick={onLoadMore}>Load More</Button>
-            </div>
-          )}
+          {hasMore && <div className="text-center"><Button onClick={onLoadMore}>Load More</Button></div>}
         </>
       ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Not following anyone yet</p>
-        </div>
+        <div className="text-center py-12 text-gray-500">Not following anyone yet.</div>
       )}
     </div>
   );

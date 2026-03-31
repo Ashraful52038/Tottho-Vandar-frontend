@@ -17,12 +17,11 @@ import {
 } from '@ant-design/icons';
 import { Avatar, Button, Empty, Select, Space, Spin, Tabs, Tag, message } from 'antd';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const { Option } = Select;
 
-// Featured Authors
 const FEATURED_AUTHORS = [
   { id: 1, name: 'Sarah Johnson', role: 'Tech Lead at Google', followers: '12.5K' },
   { id: 2, name: 'Michael Chen', role: 'AI Researcher', followers: '8.2K' },
@@ -32,15 +31,17 @@ const FEATURED_AUTHORS = [
 
 export default function FeedPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const { posts: storePosts, isLoading, error, tags } = useAppSelector((state) => state.posts);
   const { user } = useAppSelector((state) => state.auth);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [retryCount, setRetryCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-
   const [isMounted, setIsMounted] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false); // নতুন
 
   useEffect(() => {
     setIsMounted(true);
@@ -68,17 +69,40 @@ export default function FeedPage() {
 
   const posts = storePosts || [];
 
+  // ট্যাগ লোড
   useEffect(() => {
     if (isMounted) {
       dispatch(fetchTags());
     }
   }, [dispatch, isMounted]);
 
+  // প্রথমবার URL থেকে স্টেট সেট করো
   useEffect(() => {
-    if (isMounted) {
+    if (!isInitialized && isMounted) {
+      const search = searchParams.get('search') || '';
+      const tags = searchParams.get('tag')?.split(',').filter(Boolean) || [];
+      setSearchQuery(search);
+      setSelectedTagIds(tags);
+      setIsInitialized(true);
+    }
+  }, [searchParams, isMounted, isInitialized]);
+
+  // URL পরিবর্তন ট্র্যাক (ব্যাক/ফরোয়ার্ড) – স্টেট আপডেট করবে
+  useEffect(() => {
+    if (isInitialized) {
+      const search = searchParams.get('search') || '';
+      const tags = searchParams.get('tag')?.split(',').filter(Boolean) || [];
+      if (search !== searchQuery) setSearchQuery(search);
+      if (JSON.stringify(tags) !== JSON.stringify(selectedTagIds)) setSelectedTagIds(tags);
+    }
+  }, [searchParams, isInitialized]);
+
+  // ফিল্টার পরিবর্তনে API কল
+  useEffect(() => {
+    if (isMounted && isInitialized) {
       loadPosts();
     }
-  }, [dispatch, retryCount, selectedTagIds, searchQuery, isMounted]);
+  }, [dispatch, retryCount, selectedTagIds, searchQuery, isMounted, isInitialized]);
 
   const loadPosts = async () => {
     try {
@@ -100,21 +124,32 @@ export default function FeedPage() {
     setRetryCount(prev => prev + 1);
   };
 
+  // URL আপডেট ফাংশন – router.push ব্যবহার
+  const updateURL = (search: string, tags: string[]) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (tags.length) params.set('tag', tags.join(','));
+    const newUrl = `/feed?${params.toString()}`;
+    router.push(newUrl, { scroll: false });
+  };
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    updateURL(query, selectedTagIds);
   };
 
   const toggleTag = (tagId: string) => {
-    setSelectedTagIds(prev =>
-      prev.includes(tagId)
-        ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
-    );
+    const newTags = selectedTagIds.includes(tagId)
+      ? selectedTagIds.filter(id => id !== tagId)
+      : [...selectedTagIds, tagId];
+    setSelectedTagIds(newTags);
+    updateURL(searchQuery, newTags);
   };
 
   const clearAllFilters = () => {
     setSelectedTagIds([]);
     setSearchQuery('');
+    updateURL('', []);
   };
 
   const handleWritePost = () => {
@@ -133,7 +168,6 @@ export default function FeedPage() {
     router.push('/login?redirect=/feed');
   };
 
-  // Show loading until mounted
   if (!isMounted) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
@@ -142,16 +176,10 @@ export default function FeedPage() {
     );
   }
 
-  // Loading state
-  if (isLoading && posts.length === 0) {
+  if (isLoading && posts.length === 0 && !isInitialized) {
     return (
       <div className="min-h-screen bg-primary">
-        <Navbar
-          onSearch={handleSearch}
-          searchQuery={searchQuery}
-          onTopicSelect={() => {}}
-          selectedTopic=""
-        />
+        <Navbar onSearch={handleSearch} searchQuery={searchQuery} onTopicSelect={() => {}} selectedTopic="" />
         <div className="flex items-center justify-center min-h-screen px-4">
           <div className="text-center">
             <Spin size="large" />
@@ -164,17 +192,17 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-primary">
-      {/* Navbar */}
       <Navbar
         onSearch={handleSearch}
         searchQuery={searchQuery}
         onTopicSelect={() => {}}
         selectedTopic=""
+        tags={tags}
+        onTagSelect={toggleTag}
+        selectedTagIds={selectedTagIds}
       />
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Header */}
         <div className="text-center mb-8 sm:mb-10 lg:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-bold heading-color mb-2 sm:mb-3 lg:mb-4 px-4">
             {user ? `Welcome back, ${user.name}!` : 'Welcome to Tottho Vandar'}
@@ -184,7 +212,6 @@ export default function FeedPage() {
           </p>
         </div>
 
-        {/* Error message if any */}
         {error && (
           <div className="mb-4 sm:mb-6 px-4">
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -192,45 +219,42 @@ export default function FeedPage() {
                 <WarningOutlined className="text-red-600 dark:text-red-400 text-lg sm:text-xl" />
                 <p className="text-red-700 dark:text-red-400 text-sm sm:text-base">{error}</p>
               </div>
-              <Button 
-                onClick={handleRetry} 
-                icon={<ReloadOutlined />}
-                size="small"
-                className="w-full sm:w-auto"
-              >
+              <Button onClick={handleRetry} icon={<ReloadOutlined />} size="small" className="w-full sm:w-auto">
                 Retry
               </Button>
             </div>
           </div>
         )}
 
-        {/* Search and Filter Bar */}
         <div className="mb-6 sm:mb-8 px-4">
           <div className="card-bg rounded-lg shadow-sm p-3 sm:p-4 transition-colors duration-300">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
               <Select
-                mode='multiple'
+                mode="multiple"
                 placeholder="Filter by topic"
                 style={{ width: '100%', maxWidth: '300px' }}
                 value={selectedTagIds}
-                onChange={(values) => setSelectedTagIds(values as string[])}
+                onChange={(values) => {
+                  const newTags = values as string[];
+                  setSelectedTagIds(newTags);
+                  updateURL(searchQuery, newTags);
+                }}
                 allowClear
                 maxTagCount="responsive"
                 popupClassName="dark:bg-gray-800"
                 className="dark:text-white w-full sm:w-auto"
               >
-                {tags.map((tag: TagType)=> (
+                {tags.map((tag: TagType) => (
                   <Option key={tag.id} value={tag.id} className="dark:text-white">
                     {tag.name}
                   </Option>
                 ))}
               </Select>
 
-               {/* Active Filters */}
               {(selectedTagIds.length > 0 || searchQuery) && (
                 <Space size={4} wrap>
                   {selectedTagIds.map(id => {
-                    const tag = tags.find((t: TagType)=> t.id === id);
+                    const tag = tags.find((t: TagType) => t.id === id);
                     return tag ? (
                       <Tag
                         key={id}
@@ -252,20 +276,12 @@ export default function FeedPage() {
                   </Button>
                 </Space>
               )}
-              
+
               <div className="flex gap-2 w-full sm:w-auto justify-start">
-                <Button 
-                  type="text" 
-                  className="text-secondary hover:text-primary flex-1 sm:flex-none"
-                  size="middle"
-                >
+                <Button type="text" className="text-secondary hover:text-primary flex-1 sm:flex-none" size="middle">
                   Following
                 </Button>
-                <Button 
-                  type="text" 
-                  className="text-secondary hover:text-primary flex-1 sm:flex-none"
-                  size="middle"
-                >
+                <Button type="text" className="text-secondary hover:text-primary flex-1 sm:flex-none" size="middle">
                   Saved
                 </Button>
               </div>
@@ -273,13 +289,10 @@ export default function FeedPage() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 px-4">
-          {/* Main Feed */}
           <div className="lg:col-span-8">
-            {/* Feed Tabs */}
-            <Tabs 
-              defaultActiveKey="for-you" 
+            <Tabs
+              defaultActiveKey="for-you"
               className="mb-4 sm:mb-6"
               size={isMobile ? 'small' : 'middle'}
               items={[
@@ -293,9 +306,7 @@ export default function FeedPage() {
                   children: (
                     <div className="space-y-6 sm:space-y-9">
                       {posts.length > 0 ? (
-                        posts.map((post) => (
-                          <PostCard key={post.id} post={post} />
-                        ))
+                        posts.map((post) => <PostCard key={post.id} post={post} />)
                       ) : (
                         <Empty
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -310,8 +321,8 @@ export default function FeedPage() {
                                   : "Be the first to write a story!"}
                               </p>
                               {user ? (
-                                <Button 
-                                  type="primary" 
+                                <Button
+                                  type="primary"
                                   onClick={handleWritePost}
                                   className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
                                   size={isMobile ? 'middle' : 'large'}
@@ -342,11 +353,7 @@ export default function FeedPage() {
                       <RiseOutlined /> <span className="hidden xs:inline">Trending</span>
                     </span>
                   ),
-                  children: (
-                    <Empty 
-                      description={<span className="text-secondary text-sm sm:text-base">Trending posts coming soon</span>} 
-                    />
-                  ),
+                  children: <Empty description={<span className="text-secondary text-sm sm:text-base">Trending posts coming soon</span>} />,
                 },
                 {
                   key: 'latest',
@@ -355,32 +362,26 @@ export default function FeedPage() {
                       <ClockCircleOutlined /> <span className="hidden xs:inline">Latest</span>
                     </span>
                   ),
-                  children: (
-                    <Empty 
-                      description={<span className="text-secondary text-sm sm:text-base">Latest posts coming soon</span>} 
-                    />
-                  ),
+                  children: <Empty description={<span className="text-secondary text-sm sm:text-base">Latest posts coming soon</span>} />,
                 },
               ]}
             />
           </div>
 
-          {/* Sidebar */}
           <div className="hidden lg:block lg:col-span-4">
-            {/* Recommended Topics */}
             <div className="card-bg rounded-lg shadow-sm p-5 lg:p-6 mb-6 transition-colors duration-300">
               <h2 className="text-base lg:text-lg font-semibold heading-color mb-3 lg:mb-4 flex items-center gap-2">
                 <FireOutlined className="text-green-600 dark:text-green-400" />
                 Recommended topics
               </h2>
               <div className="flex flex-wrap gap-2">
-                {tags.slice(0, 12).map((tag:TagType) => (
+                {tags.slice(0, 12).map((tag: TagType) => (
                   <button
                     key={tag.id}
                     onClick={() => toggleTag(tag.id)}
                     className={`px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-medium transition-colors
-                      ${selectedTagIds.includes(tag.id) 
-                        ? 'bg-green-600 text-white dark:bg-green-700' 
+                      ${selectedTagIds.includes(tag.id)
+                        ? 'bg-green-600 text-white dark:bg-green-700'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                       }`}
                   >
@@ -390,7 +391,6 @@ export default function FeedPage() {
               </div>
             </div>
 
-            {/* Featured Authors */}
             <div className="card-bg rounded-lg shadow-sm p-5 lg:p-6 mb-6 transition-colors duration-300">
               <h2 className="text-base lg:text-lg font-semibold heading-color mb-3 lg:mb-4 flex items-center gap-2">
                 <UserOutlined className="text-blue-600 dark:text-blue-400" />
@@ -399,23 +399,16 @@ export default function FeedPage() {
               <div className="space-y-3 lg:space-y-4">
                 {FEATURED_AUTHORS.map(author => (
                   <div key={author.id} className="flex items-start gap-2 lg:gap-3">
-                    <Avatar 
-                      size={40} 
-                      icon={<UserOutlined />} 
-                      className="shrink-0 border-2 border-custom"
-                    />
+                    <Avatar size={40} icon={<UserOutlined />} className="shrink-0 border-2 border-custom" />
                     <div className="flex-1 min-w-0">
-                      <Link 
-                        href={`/profile/${author.id}`}
-                        className="font-medium heading-color hover:text-green-600 dark:hover:text-green-400 transition-colors block truncate text-sm lg:text-base"
-                      >
+                      <Link href={`/profile/${author.id}`} className="font-medium heading-color hover:text-green-600 dark:hover:text-green-400 transition-colors block truncate text-sm lg:text-base">
                         {author.name}
                       </Link>
                       <p className="text-xs lg:text-sm text-secondary truncate">{author.role}</p>
                       <p className="text-xs text-tertiary mt-0.5 lg:mt-1">{author.followers} followers</p>
                     </div>
-                    <Button 
-                      type="link" 
+                    <Button
+                      type="link"
                       className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 p-0 shrink-0 text-xs lg:text-sm"
                       onClick={() => {
                         if (!user) {
@@ -431,7 +424,6 @@ export default function FeedPage() {
               </div>
             </div>
 
-            {/* Reading List */}
             {user && (
               <div className="card-bg rounded-lg shadow-sm p-5 lg:p-6 transition-colors duration-300">
                 <h2 className="text-base lg:text-lg font-semibold heading-color mb-3 lg:mb-4 flex items-center gap-2">
@@ -441,11 +433,7 @@ export default function FeedPage() {
                 <p className="text-secondary text-xs lg:text-sm mb-3 lg:mb-4">
                   Save stories to read later or keep for reference.
                 </p>
-                <Button 
-                  type="primary" 
-                  block 
-                  className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-sm"
-                >
+                <Button type="primary" block className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-sm">
                   View all saved
                 </Button>
               </div>

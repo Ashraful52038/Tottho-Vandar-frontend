@@ -4,7 +4,6 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { clearError, signup } from '@/store/slices/authSlice';
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
 import { Alert, Button, Form, Input, message, Modal, Typography } from "antd";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from 'react';
 
@@ -215,12 +214,12 @@ export default function SignupModal({ isOpen, onClose, onLoginClick }: SignupMod
                     <div className="text-center border-t border-gray-200 dark:border-gray-700 pt-4">
                         <Text type="secondary" className="dark:text-gray-400">
                             Already have an account?{' '}
-                            <Link
-                                href="/login"
-                                className="text-green-600 hover:text-green-700 dark:text-green-400 font-medium"
+                            <span
+                                onClick={onLoginClick}
+                                className="text-green-600 hover:text-green-700 dark:text-green-400 font-medium cursor-pointer"
                             >
                                 Log In
-                            </Link>
+                            </span>
                         </Text>
                     </div>
                 </Form>

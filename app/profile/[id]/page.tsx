@@ -223,7 +223,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Header Card with Back Button and Edit Button */}
+        {/* Profile Header Card */}
         <Card className="mb-10 shadow-md">
           {/* Back button (left side) */}
           <div className="flex justify-between items-start mb-4">
@@ -297,7 +297,7 @@ export default function ProfilePage() {
   );
 }
 
-// ----- All child components (unchanged but included for completeness) -----
+// ----- All child components -----
 
 interface TabProps { onLoadMore: () => void; hasMore: boolean; }
 interface UserPostsProps extends TabProps { posts: UserPost[]; userId: string; isOwnProfile: boolean; }

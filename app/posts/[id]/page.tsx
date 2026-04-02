@@ -1,8 +1,8 @@
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
-import { addComment, deleteComment, fetchComments } from '@/store/slices/commentSlice'; // likeComment সরানো হয়েছে
-import { deletePost, fetchPostById, likePost, updateCommentCount } from '@/store/slices/postSlice';
+import { addComment, deleteComment, fetchComments } from '@/store/slices/commentSlice';
+import { fetchPostById, likePost, updateCommentCount } from '@/store/slices/postSlice';
 import { Comment } from '@/types/comments';
 import { Post } from '@/types/posts';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -23,7 +23,6 @@ import {
   Button,
   Input,
   List,
-  Modal,
   Space,
   Spin,
   Tag,
@@ -126,9 +125,6 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     if (currentPost) {
-      console.log('Post data:', currentPost);
-      console.log('Featured image:', currentPost.featuredImage);
-      console.log('Image URL:', getFullImageUrl(currentPost.featuredImage));
       setImageTimestamp(Date.now());
     }
   }, [currentPost]);
@@ -142,18 +138,6 @@ export default function PostDetailPage() {
       await dispatch(likePost(params.id as string)).unwrap();
     } catch (error) {
       message.error('Failed to like post');
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      await dispatch(deletePost(params.id as string)).unwrap();
-      message.success('Post deleted successfully');
-      router.push('/feed');
-    } catch (error) {
-      message.error('Failed to delete post');
-    } finally {
-      setDeleteModalOpen(false);
     }
   };
 
@@ -310,10 +294,8 @@ export default function PostDetailPage() {
                 className="w-full object-contain"
                 style={{ maxHeight: '500px' }}
                 onError={(e) => {
-                  console.error('Image failed to load:', imageUrl);
                   setImageError(true);
                 }}
-                onLoad={() => console.log('Image loaded successfully:', imageUrl)}
               />
             </div>
           ) : (
@@ -496,33 +478,6 @@ export default function PostDetailPage() {
           )}
         </div>
       </div>
-
-      {/* Delete Post Confirmation Modal */}
-      <Modal
-        title="Delete Post"
-        open={deleteModalOpen}
-        onOk={handleDelete}
-        onCancel={() => setDeleteModalOpen(false)}
-        okText="Delete"
-        okButtonProps={{ danger: true }}
-        cancelText="Cancel"
-      >
-        <p>Are you sure you want to delete this post?</p>
-        <p className="text-red-500">This action cannot be undone!</p>
-      </Modal>
-
-      {/* Delete Comment Confirmation Modal */}
-      <Modal
-        title="Delete Comment"
-        open={!!deleteCommentId}
-        onOk={() => deleteCommentId && handleCommentDelete(deleteCommentId)}
-        onCancel={() => setDeleteCommentId(null)}
-        okText="Delete"
-        okButtonProps={{ danger: true }}
-        cancelText="Cancel"
-      >
-        <p>Are you sure you want to delete this comment?</p>
-      </Modal>
     </div>
   );
 }

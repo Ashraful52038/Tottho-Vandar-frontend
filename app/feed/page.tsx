@@ -1,7 +1,8 @@
 'use client';
 
 import Navbar from '@/components/layout/Navbar';
-import PostCard from '@/components/posts/PostCard';
+import PostCard, { normalizePost } from '@/components/posts/PostCard';
+import { userService } from '@/lib/api/user';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { fetchPosts, fetchTags } from '@/store/slices/postSlice';
 import { Tag as TagType } from '@/types/tags';
@@ -41,7 +42,13 @@ export default function FeedPage() {
   const [retryCount, setRetryCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false); // নতুন
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // State for liked posts (trending tab)
+  const [likedPosts, setLikedPosts] = useState<any[]>([]);
+  const [likedLoading, setLikedLoading] = useState(false);
+  const [likedPage, setLikedPage] = useState(1);
+  const [likedHasMore, setLikedHasMore] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -69,14 +76,14 @@ export default function FeedPage() {
 
   const posts = storePosts || [];
 
-  // ট্যাগ লোড
+  // Load tags
   useEffect(() => {
     if (isMounted) {
       dispatch(fetchTags());
     }
   }, [dispatch, isMounted]);
 
-  // প্রথমবার URL থেকে স্টেট সেট করো
+  // First time load URL params
   useEffect(() => {
     if (!isInitialized && isMounted) {
       const search = searchParams.get('search') || '';
@@ -87,7 +94,7 @@ export default function FeedPage() {
     }
   }, [searchParams, isMounted, isInitialized]);
 
-  // URL পরিবর্তন ট্র্যাক (ব্যাক/ফরোয়ার্ড) – স্টেট আপডেট করবে
+  // Sync state with URL changes
   useEffect(() => {
     if (isInitialized) {
       const search = searchParams.get('search') || '';
@@ -97,12 +104,40 @@ export default function FeedPage() {
     }
   }, [searchParams, isInitialized]);
 
-  // ফিল্টার পরিবর্তনে API কল
+  // Fetch feed posts (for you tab)
   useEffect(() => {
     if (isMounted && isInitialized) {
       loadPosts();
     }
   }, [dispatch, retryCount, selectedTagIds, searchQuery, isMounted, isInitialized]);
+
+  // Fetch liked posts when needed (triggered by tab change)
+  const loadLikedPosts = async (pageNum: number = 1) => {
+    if (!user) return;
+    setLikedLoading(true);
+    try {
+      const response = await userService.getUserLikes(user.id, pageNum, 10);
+      // Extract the actual post from each like object
+      const newLikedPosts = response.likes
+      .map((like: any) => like.post)
+      .filter(Boolean)
+      .map((post: any) => normalizePost(post));
+      
+      setLikedPosts(prev => pageNum === 1 ? newLikedPosts : [...prev, ...newLikedPosts]);
+      setLikedHasMore((pageNum * 10) < (response.total || 0));
+      setLikedPage(pageNum);
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Failed to load liked posts');
+    } finally {
+      setLikedLoading(false);
+    }
+  };
+
+  const loadMoreLikedPosts = () => {
+    if (!likedLoading && likedHasMore) {
+      loadLikedPosts(likedPage + 1);
+    }
+  };
 
   const loadPosts = async () => {
     try {
@@ -124,7 +159,6 @@ export default function FeedPage() {
     setRetryCount(prev => prev + 1);
   };
 
-  // URL আপডেট ফাংশন – router.push ব্যবহার
   const updateURL = (search: string, tags: string[]) => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
@@ -166,6 +200,13 @@ export default function FeedPage() {
 
   const handleLogin = () => {
     router.push('/login?redirect=/feed');
+  };
+
+  // Tab switching handler
+  const handleTabChange = (activeKey: string) => {
+    if (activeKey === 'trending' && user && likedPosts.length === 0 && !likedLoading) {
+      loadLikedPosts(1);
+    }
   };
 
   if (!isMounted) {
@@ -295,6 +336,7 @@ export default function FeedPage() {
               defaultActiveKey="for-you"
               className="mb-4 sm:mb-6"
               size={isMobile ? 'small' : 'middle'}
+              onChange={handleTabChange}
               items={[
                 {
                   key: 'for-you',
@@ -353,7 +395,64 @@ export default function FeedPage() {
                       <RiseOutlined /> <span className="hidden xs:inline">Trending</span>
                     </span>
                   ),
-                  children: <Empty description={<span className="text-secondary text-sm sm:text-base">Trending posts coming soon</span>} />,
+                  children: (
+                    <div className="space-y-6 sm:space-y-9">
+                      {!user ? (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={
+                            <div className="text-center py-8 sm:py-12">
+                              <p className="paragraph-color text-sm sm:text-base mb-4">
+                                Login to see the posts you've liked.
+                              </p>
+                              <Button
+                                type="primary"
+                                onClick={handleLogin}
+                                className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                              >
+                                Login
+                              </Button>
+                            </div>
+                          }
+                        />
+                      ) : likedLoading && likedPosts.length === 0 ? (
+                        <div className="flex justify-center py-12">
+                          <Spin size="large" />
+                        </div>
+                      ) : likedPosts.length > 0 ? (
+                        <>
+                          {likedPosts.map((post) => (
+                            <PostCard key={post.id} post={post} />
+                          ))}
+                          {likedHasMore && (
+                            <div className="text-center mt-8">
+                              <Button onClick={loadMoreLikedPosts} loading={likedLoading}>
+                                Load More
+                              </Button>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={
+                            <div className="text-center py-8 sm:py-12">
+                              <p className="paragraph-color text-sm sm:text-base mb-4">
+                                You haven't liked any posts yet.
+                              </p>
+                              <Button
+                                type="primary"
+                                onClick={() => router.push('/feed')}
+                                className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                              >
+                                Explore Posts
+                              </Button>
+                            </div>
+                          }
+                        />
+                      )}
+                    </div>
+                  ),
                 },
                 {
                   key: 'latest',
@@ -368,6 +467,7 @@ export default function FeedPage() {
             />
           </div>
 
+          {/* Right sidebar */}
           <div className="hidden lg:block lg:col-span-4">
             <div className="card-bg rounded-lg shadow-sm p-5 lg:p-6 mb-6 transition-colors duration-300">
               <h2 className="text-base lg:text-lg font-semibold heading-color mb-3 lg:mb-4 flex items-center gap-2">

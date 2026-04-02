@@ -148,7 +148,6 @@ const postSlice = createSlice({
         updateCommentCount: (state, action: PayloadAction<{ postId: string; delta: number }>) => {
         const { postId, delta } = action.payload;
 
-        // ফিডের পোস্ট লিস্ট – নতুন অ্যারে তৈরি করি
         if (state.posts) {
             state.posts = state.posts.map(post =>
                 post.id === postId
@@ -161,7 +160,6 @@ const postSlice = createSlice({
             );
         }
 
-        // মাই পোস্ট লিস্ট
         if (state.myPosts) {
             state.myPosts = state.myPosts.map(post =>
                 post.id === postId
@@ -174,7 +172,6 @@ const postSlice = createSlice({
             );
         }
 
-        // বর্তমান পোস্ট (ডিটেইল পেজে)
         if (state.currentPost && state.currentPost.id === postId) {
             state.currentPost = {
                 ...state.currentPost,
@@ -186,7 +183,6 @@ const postSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Fetch Posts
             .addCase(fetchPosts.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -208,8 +204,6 @@ const postSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
             })
-
-            // Fetch Post By Id
             .addCase(fetchPostById.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -222,8 +216,6 @@ const postSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
             })
-
-            // Create Post
             .addCase(createPost.pending, (state) => {
                 state.isLoading = true;
             })
@@ -270,8 +262,6 @@ const postSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
             })
-
-            // Delete Post
             .addCase(deletePost.fulfilled, (state, action: PayloadAction<string>) => {
                 state.posts = state.posts.filter(post => post.id !== action.payload);
                 if (state.myPosts.length > 0) {
@@ -299,8 +289,6 @@ const postSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
             })
-
-            // Like Post
             .addCase(likePost.fulfilled, (state, action) => {
                 const updatedPost = action.payload;
                 if (!updatedPost?.id) return;
@@ -314,8 +302,6 @@ const postSlice = createSlice({
                     state.currentPost = updatedPost;
                 }
             })
-
-            // Fetch Tags
             .addCase(fetchTags.fulfilled, (state, action: PayloadAction<any>) => {
                 state.tags = action.payload?.tags || action.payload || [];
             });

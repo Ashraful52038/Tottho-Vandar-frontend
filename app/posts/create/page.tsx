@@ -63,7 +63,6 @@ export default function CreatePostPage() {
 
   useEffect(() => {
     if (storeTags && storeTags.length > 0) {
-      console.log('Tags from database:', storeTags);
       setAvailableTags(storeTags);
     }
   }, [storeTags]);
@@ -112,7 +111,6 @@ export default function CreatePostPage() {
       message.success('Post saved as draft!');
       router.push('/feed');
     } catch (error: any) {
-      console.error('Save draft error:', error);
       message.error(error?.response?.data?.error || 'Failed to save draft');
     }
   };
@@ -138,8 +136,6 @@ export default function CreatePostPage() {
       if (imageUrl && !imageUrl.startsWith('http')) {
         imageUrl = `http://localhost:8080${imageUrl}`;
       }
-
-      console.log('🖼️ Processed imageUrl:', imageUrl);
 
       const postData = {
         title: values.title,

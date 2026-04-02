@@ -17,7 +17,6 @@ export default function ForgotPasswordPage() {
     const [form] = Form.useForm();
     const { user } = useAppSelector((state) => state.auth);
 
-    // যদি ইউজার ইতিমধ্যে লগইন করে থাকে, তাহলে সেটিংসে পাঠিয়ে দাও
     if (user) {
         router.push('/settings');
         return null;
@@ -29,9 +28,7 @@ export default function ForgotPasswordPage() {
             await dispatch(forgetPassword(values.email)).unwrap();
             message.success('Password reset email sent. Please check your inbox.');
             form.resetFields();
-            // ইচ্ছে করলে কাউন্টডাউন বা অন্য লজিক যোগ করতে পারো
         } catch (error: any) {
-            // error already shown by slice
             console.error(error);
         } finally {
             setLoading(false);

@@ -207,8 +207,6 @@ const profileSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
-      // Fetch posts
       .addCase(fetchUserPosts.pending, (state) => {
         state.isLoading = true;
       })
@@ -226,8 +224,6 @@ const profileSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
-      // Fetch comments
       .addCase(fetchUserComments.pending, (state) => {
         state.isLoading = true;
       })
@@ -245,8 +241,6 @@ const profileSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
-      // Fetch likes
       .addCase(fetchUserLikes.pending, (state) => {
         state.isLoading = true;
       })
@@ -264,8 +258,6 @@ const profileSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
-      // Fetch followers
       .addCase(fetchFollowers.pending, (state) => {
         state.isLoading = true;
       })
@@ -286,8 +278,6 @@ const profileSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
-      // Fetch following
       .addCase(fetchFollowing.pending, (state) => {
         state.isLoading = true;
       })
@@ -308,38 +298,28 @@ const profileSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
-      // Follow/Unfollow updates
       .addCase(followUser.fulfilled, (state, action) => {
-        // Update profile stats
         if (state.profile && state.profile.id === action.payload.userId) {
           if (state.profile.stats) {
             state.profile.stats.followers += 1;
           }
         }
-        // Update followers list - set isFollowing to true
         state.followers = state.followers.map(f => 
           f.id === action.payload.userId ? { ...f, isFollowing: true } : f
         );
-        
-        // Update following list (if needed)
         state.following = state.following.map(f => 
           f.id === action.payload.userId ? { ...f, isFollowing: true } : f
         );
       })
       .addCase(unfollowUser.fulfilled, (state, action) => {
-        // Update profile stats
         if (state.profile && state.profile.id === action.payload.userId) {
           if (state.profile.stats) {
             state.profile.stats.followers = Math.max(0, state.profile.stats.followers - 1);
           }
         }
-        // Update followers list - set isFollowing to false
         state.followers = state.followers.map(f => 
           f.id === action.payload.userId ? { ...f, isFollowing: false } : f
         );
-        
-        // Update following list (if needed)
         state.following = state.following.map(f => 
           f.id === action.payload.userId ? { ...f, isFollowing: false } : f
         );

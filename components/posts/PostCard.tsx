@@ -22,7 +22,7 @@ interface PostCardProps {
 }
 
 // Helper function to normalize post data
-const normalizePost = (post: any): Post => {
+export const normalizePost = (post: any): Post => {
   let author = post.author;
   if (!author && post.authorId) {
     author = {
@@ -131,7 +131,6 @@ export default function PostCard({ post: originalPost }: PostCardProps) {
   
   const post = normalizePost(originalPost);
   const imageUrl = getFullImageUrl(post.featuredImage);
-  console.log('Generated imageUrl:', imageUrl);
 
   return (
     <Link href={`/posts/${post.id}`} className="block no-underline">
@@ -191,7 +190,7 @@ export default function PostCard({ post: originalPost }: PostCardProps) {
               {post.title}
             </Title>
             
-            {/* Content Preview - HTML ট্যাগ সহ রেন্ডার হবে */}
+            {/* Content Preview */}
             <div className="prose prose-sm max-w-none mb-4 line-clamp-3">
               <div 
                 className="text-sm text-black dark:text-gray-1000 leading-relaxed"

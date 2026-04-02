@@ -19,7 +19,7 @@ interface LoginModalProps {
 export default function LoginModal({isOpen, onClose, onSignUpClick}: LoginModalProps){
     const router = useRouter();
     const dispatch = useAppDispatch();
-     const [form] = Form.useForm();
+    const [form] = Form.useForm();
     const { isLoading, isAuthenticated, error, user } = useAppSelector((state) => state.auth);
 
     // Form reset when modal closes
@@ -105,9 +105,12 @@ export default function LoginModal({isOpen, onClose, onSignUpClick}: LoginModalP
             </Link>
             <Text type="secondary">
                 New User?{' '}
-                <Link href="/signup" className="text-blue-500">
+                <span
+                    onClick={() => onSignUpClick?.()} 
+                    className="text-blue-500 cursor-pointer hover:underline"
+                >
                 Sign up
-                </Link>
+                </span>
             </Text>
         </div>
         </Form>

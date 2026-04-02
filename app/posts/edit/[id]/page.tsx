@@ -58,7 +58,6 @@ export default function EditPostPage() {
 
   useEffect(() => {
     if (storeTags && storeTags.length > 0) {
-      console.log('Tags from database:', storeTags);
       setAvailableTags(storeTags);
     }
   }, [storeTags]);
@@ -71,7 +70,6 @@ export default function EditPostPage() {
 
   useEffect(() => {
     if (currentPost) {
-      console.log('Post data from API:', currentPost);
 
       let postTags: string[] = [];
       if (currentPost.tags) {
@@ -143,8 +141,6 @@ export default function EditPostPage() {
       tagNames: tagNames,
       featuredImage: imageUrl,
     };
-
-    console.log('Updating post with data:', updateData);
 
     try {
       await dispatch(updatePost({
@@ -239,7 +235,7 @@ export default function EditPostPage() {
             />
           </Form.Item>
 
-          {/* Featured Image - CreatePostPage এর মতো */}
+          {/* Featured Image */}
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h3 className="text-lg font-medium mb-4">Featured Image</h3>
             <Upload

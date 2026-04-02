@@ -27,13 +27,11 @@ export default function SettingsPage() {
     const [changePasswordForm] = Form.useForm();
     const [forgotPasswordForm] = Form.useForm();
 
-    // Redirect if not logged in
     if (!user) {
         router.push('/login');
         return null;
     }
 
-    // Change Password Handler
     const handleChangePassword = async (values: {
         currentPassword: string;
         newPassword: string;
@@ -77,10 +75,10 @@ export default function SettingsPage() {
     // Format member since date safely
     const memberSince = user.createdAt
         ? new Date(user.createdAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-          })
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
         : 'Unknown';
 
     // FAQ items
@@ -108,7 +106,7 @@ export default function SettingsPage() {
         {
             key: '5',
             label: 'Can I use a password I used before?',
-            children: 'For security, we recommend using a completely new password that you haven\'t used recently. This helps protect your account.'
+            children: 'No, you can not. For security, we recommend using a completely new password that you haven\'t used recently. This helps protect your account.'
         },
         {
             key: '6',
@@ -132,7 +130,7 @@ export default function SettingsPage() {
 
                 {/* Profile Summary Card */}
                 <Card className="mb-8 shadow-lg rounded-2xl border-0 overflow-hidden">
-                    {/* ✅ Back Button Row */}
+                    {/*Back Button Row */}
                     <div className="flex justify-between items-start mb-4">
                         <Button
                             type="text"

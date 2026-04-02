@@ -31,7 +31,6 @@ export const postService = {
     },
 
     createPost: async (data: any) => {
-        console.log('📤 Sending to backend:', data);
         const response = await axiosInstance.post('/posts', data);
         return response.data;
     },
@@ -75,5 +74,5 @@ export const postService = {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
-  }
+}
 };

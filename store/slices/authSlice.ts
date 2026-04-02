@@ -70,7 +70,7 @@ export const login = createAsyncThunk(
     async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
         try {
             const response = await authService.login({ email, password });
-            return response; // Don't cast, let the reducer handle it
+            return response;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Login Failed');
         }
@@ -198,7 +198,7 @@ const authSlice = createSlice({
             .addCase(login.fulfilled, (state, action: PayloadAction<any>) => {
                 state.isLoading = false;
                 console.log('Login payload:', action.payload);
-                // Check response type
+            
                 if (isAuthResponse(action.payload)) {
                     state.isAuthenticated = true;
                     state.user = action.payload.user;
@@ -216,7 +216,6 @@ const authSlice = createSlice({
                 message.error(action.payload as string);
             })
 
-            // Signup
             .addCase(signup.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -245,7 +244,6 @@ const authSlice = createSlice({
                 message.error(state.error);
             })
 
-            // Verify Email
             .addCase(verifyEmail.fulfilled, (state, action: PayloadAction<any>) => {
                 if (state.user) {
                     state.user.verified = true;
@@ -258,7 +256,6 @@ const authSlice = createSlice({
                 message.error(action.payload as string);
             })
 
-            // Resend Verification
             .addCase(resendVerificationEmail.fulfilled, (state, action: PayloadAction<any>) => {
                 message.success(action.payload.message || 'Verification email resent!');
             })
@@ -267,7 +264,6 @@ const authSlice = createSlice({
                 message.error(action.payload as string);
             })
 
-            // Get Current User
             .addCase(getCurrentUser.pending, (state) => {
                 state.isLoading = true;
             })
@@ -289,7 +285,6 @@ const authSlice = createSlice({
                 state.token = null;
             })
 
-            // Forget Password
             .addCase(forgetPassword.pending, (state) => {
                 state.isLoading = true;
             })
@@ -302,8 +297,6 @@ const authSlice = createSlice({
                 state.error = action.payload as string;
                 message.error(action.payload as string);
             })
-
-            // Reset Password
             .addCase(resetPassword.pending, (state) => {
                 state.isLoading = true;
             })
@@ -316,8 +309,6 @@ const authSlice = createSlice({
                 state.error = action.payload as string;
                 message.error(action.payload as string);
             })
-
-            // Change Password
             .addCase(changePassword.pending, (state) => {
                 state.isLoading = true;
             })

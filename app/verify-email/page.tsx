@@ -1,4 +1,3 @@
-// app/verify-email/page.tsx
 'use client';
 
 import { useAppDispatch } from '@/store/hooks/reduxHooks';
@@ -42,8 +41,6 @@ export default function VerifyEmailPage() {
   const handleResendVerification = async () => {
     setResendLoading(true);
     try {
-      // You'll need to implement this action in your auth slice
-      // await dispatch(resendVerificationEmail()).unwrap();
       setResendSuccess(true);
       setTimeout(() => setResendSuccess(false), 5000);
     } catch (error: any) {

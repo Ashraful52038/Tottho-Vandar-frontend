@@ -1,7 +1,7 @@
 'use client';
 
 import { Comment } from '@/types/comments';
-import { DeleteOutlined, UserOutlined } from '@ant-design/icons'; // LikeFilled, LikeOutlined সরানো হয়েছে
+import { DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, List } from 'antd';
 import moment from 'moment';
 import { useState } from 'react';
@@ -10,7 +10,6 @@ interface CommentItemProps {
   comment: Comment;
   replies: Comment[];
   onReply: (comment: Comment) => void;
-  // onLike সম্পূর্ণ সরানো হয়েছে
   onDelete: (id: string) => void;
   currentUser: any;
   isAuthor: boolean;
@@ -57,7 +56,6 @@ export const CommentItem = ({
           <p className="text-gray-800 mb-2">{comment.content}</p>
           
           <div className="flex items-center gap-4">
-            {/* লাইক বাটন সরানো হয়েছে */}
             
             {currentUser && (
               <Button type="text" size="small" onClick={() => onReply(comment)}>

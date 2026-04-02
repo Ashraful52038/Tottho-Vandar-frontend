@@ -1,9 +1,8 @@
-// app/profile/edit/page.tsx
 'use client';
 
 import { userService } from '@/lib/api/user';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
-import { updateUser } from '@/store/slices/authSlice'; // সঠিক অ্যাকশন ইম্পোর্ট করুন
+import { updateUser } from '@/store/slices/authSlice';
 import type { User } from '@/types/user';
 import { UploadOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Card, Form, Input, message, Spin, Upload } from 'antd';
@@ -43,7 +42,6 @@ export default function EditProfilePage() {
     try {
       const updatedUserData = await userService.updateProfile(values);
       
-      // সঠিকভাবে updateUser অ্যাকশন ডিসপ্যাচ করুন
       dispatch(updateUser(updatedUserData));
       
       message.success('Profile updated successfully');
@@ -62,13 +60,11 @@ export default function EditProfilePage() {
     try {
       const { avatarUrl } = await userService.uploadAvatar(file);
       
-      // ইউজার অবজেক্ট আপডেট করুন
       const updatedUserData: User = {
         ...user,
         avatar: avatarUrl
       };
       
-      // সঠিকভাবে updateUser অ্যাকশন ডিসপ্যাচ করুন
       dispatch(updateUser(updatedUserData));
       
       message.success('Avatar updated successfully');

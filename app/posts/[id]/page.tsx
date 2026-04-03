@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { addComment, deleteComment, fetchComments } from '@/store/slices/commentSlice';
-import { fetchPostById, likePost, updateCommentCount } from '@/store/slices/postSlice';
+import { deletePost, fetchPostById, likePost, updateCommentCount } from '@/store/slices/postSlice';
 import { Comment } from '@/types/comments';
 import { Post } from '@/types/posts';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -12,6 +12,7 @@ import {
   CommentOutlined,
   DeleteOutlined,
   EditOutlined,
+  ExclamationCircleOutlined,
   HeartFilled,
   HeartOutlined,
   SendOutlined,
@@ -23,6 +24,7 @@ import {
   Button,
   Input,
   List,
+  Modal,
   Space,
   Spin,
   Tag,
@@ -144,6 +146,26 @@ export default function PostDetailPage() {
   const handleEdit = () => {
     router.push(`/posts/edit/${params.id}`);
   };
+
+  const handleDeletePost = () => {
+  Modal.confirm({
+    title: 'Delete Post',
+    icon: <ExclamationCircleOutlined />,
+    content: 'Are you sure you want to delete this post? This action cannot be undone.',
+    okText: 'Yes, Delete',
+    okType: 'danger',
+    cancelText: 'Cancel',
+    async onOk() {
+      try {
+        await dispatch(deletePost(params.id as string)).unwrap();
+        message.success('Post deleted successfully');
+        router.push('/feed');
+      } catch (error: any) {
+        message.error(error.message || 'Failed to delete post');
+      }
+    },
+  });
+};
 
   const handleCommentSubmit = async () => {
     if (!user) {
@@ -270,7 +292,7 @@ export default function PostDetailPage() {
                   <Button 
                     danger 
                     icon={<DeleteOutlined />} 
-                    onClick={() => setDeleteModalOpen(true)}
+                    onClick={handleDeletePost}
                   >
                     Delete
                   </Button>

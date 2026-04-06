@@ -42,9 +42,9 @@ export default function LoginModal({isOpen, onClose, onSignUpClick}: LoginModalP
 
     const onFinish = async (values: any) => {
     try {
-        const resultAction = await dispatch(login({ 
-        email: values.email, 
-        password: values.password 
+        const resultAction = await dispatch(login({
+        email: values.email,
+        password: values.password
         })).unwrap();
         console.log('Login result:', resultAction); 
     } catch (err) {

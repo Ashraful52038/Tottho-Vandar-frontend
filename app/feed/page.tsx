@@ -104,7 +104,6 @@ export default function FeedPage() {
         sortBy: 'latest'
       })).unwrap();
     } catch (err) {
-      console.error('Failed to load posts:', err);
       message.error('Failed to load posts. Please try again.');
     }
   };

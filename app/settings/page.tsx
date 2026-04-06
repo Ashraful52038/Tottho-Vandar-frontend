@@ -53,7 +53,7 @@ export default function SettingsPage() {
             changePasswordForm.resetFields();
             message.success('Password changed successfully!');
         } catch (error: any) {
-            console.error('Change password error:', error);
+            // Error handled by Redux state
         } finally {
             setLoading(false);
         }
@@ -67,7 +67,7 @@ export default function SettingsPage() {
             forgotPasswordForm.resetFields();
             message.success('Reset link sent to your email!');
         } catch (error: any) {
-            console.error('Forgot password error:', error);
+            // Error handled by Redux state
         } finally {
             setLoading(false);
         }

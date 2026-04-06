@@ -1,7 +1,11 @@
 'use client';
 
-import PostCard from '@/components/posts/PostCard';
-import type { FollowUser, UserComment, UserLike, UserPost } from '@/lib/api/user';
+import FollowersList from '@/components/profile/FollowersList';
+import FollowingList from '@/components/profile/FollowingList';
+import UserComments from '@/components/profile/UserComments';
+import UserLikes from '@/components/profile/UserLikes';
+import UserPosts from '@/components/profile/UserPosts';
+import type { FollowUser } from '@/lib/api/user';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import {
   fetchFollowers,
@@ -20,14 +24,12 @@ import {
   CalendarOutlined,
   CheckCircleFilled,
   EditOutlined,
-  HeartOutlined,
   LoadingOutlined,
   MailOutlined,
   UserOutlined
 } from '@ant-design/icons';
 import { Avatar, Button, Card, Col, Row, Spin, Statistic, Tabs, message } from 'antd';
 import moment from 'moment';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -293,164 +295,6 @@ export default function ProfilePage() {
           <Tabs items={items} activeKey={activeTab} onChange={setActiveTab} />
         </Card>
       </div>
-    </div>
-  );
-}
-
-// ----- All child components -----
-
-interface TabProps { onLoadMore: () => void; hasMore: boolean; }
-interface UserPostsProps extends TabProps { posts: UserPost[]; userId: string; isOwnProfile: boolean; }
-
-function UserPosts({ posts, isOwnProfile, onLoadMore, hasMore }: UserPostsProps) {
-
-  return (
-    <div className="space-y-4">
-      {isOwnProfile && (
-        <div className="flex justify-end">
-          <Button type="primary" href="/posts/create" icon={<EditOutlined />}>Create Post</Button>
-        </div>
-      )}
-      {posts.length ? (
-        <>
-          <div className="grid grid-cols-1 gap-6">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post as any} />
-            ))}
-          </div>
-          
-          {hasMore && (
-          <div className="text-center mt-4">
-            <Button onClick={onLoadMore}>
-              Load More
-            </Button>
-          </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center py-12 text-gray-500">No posts yet.</div>
-      )}
-    </div>
-  );
-}
-
-interface UserCommentsProps extends TabProps { comments: UserComment[]; }
-function UserComments({ comments, onLoadMore, hasMore }: UserCommentsProps) {
-  return (
-    <div className="space-y-4">
-      {comments.length ? (
-        <>
-          {comments.map(comment => (
-            <Card key={comment.id} className="cursor-pointer hover:shadow" onClick={() => window.location.href = `/posts/${comment.postId}`}>
-              <p>{comment.content}</p>
-              <div className="flex justify-between mt-2 text-sm text-gray-500">
-                <span>on {comment.postTitle || 'Post'}</span>
-                <span><HeartOutlined /> {comment.likes || 0} • {moment(comment.createdAt).fromNow()}</span>
-              </div>
-            </Card>
-          ))}
-          {hasMore && <div className="text-center mt-4"><Button onClick={onLoadMore}>Load More</Button></div>}
-        </>
-      ) : (
-        <div className="text-center py-12 text-gray-500">No comments yet.</div>
-      )}
-    </div>
-  );
-}
-
-interface UserLikesProps extends TabProps { likes: UserLike[]; }
-function UserLikes({ likes, onLoadMore, hasMore }: UserLikesProps) {
-  return (
-    <div className="space-y-4">
-      {likes.length ? (
-        <>
-          {likes.map(like => (
-            <Card key={like.id} className="cursor-pointer hover:shadow" onClick={() => window.location.href = like.postId ? `/posts/${like.postId}` : '#'}>
-              {like.type === 'post' ? (
-                <p><HeartOutlined className="text-red-500" /> Liked a post: <strong>{like.postTitle || 'Post'}</strong></p>
-              ) : (
-                <p><HeartOutlined className="text-red-500" /> Liked a comment: "{like.content}" on {like.postTitle || 'Post'}</p>
-              )}
-              <div className="text-right text-gray-400 text-sm mt-1">{moment(like.createdAt).fromNow()}</div>
-            </Card>
-          ))}
-          {hasMore && <div className="text-center mt-4"><Button onClick={onLoadMore}>Load More</Button></div>}
-        </>
-      ) : (
-        <div className="text-center py-12 text-gray-500">No likes yet.</div>
-      )}
-    </div>
-  );
-}
-
-interface FollowersListProps extends TabProps { followers: FollowUser[]; currentUserId?: string; }
-function FollowersList({ followers, currentUserId, onLoadMore, hasMore }: FollowersListProps) {
-  const dispatch = useAppDispatch();
-  const handleFollow = async (userId: string, isFollowing: boolean) => {
-    try {
-      if (isFollowing) await dispatch(unfollowUser(userId)).unwrap();
-      else await dispatch(followUser(userId)).unwrap();
-      message.success(isFollowing ? 'Unfollowed' : 'Followed');
-    } catch { message.error('Failed'); }
-  };
-  return (
-    <div className="space-y-4">
-      {followers.length ? (
-        <>
-          {followers.map(f => (
-            <Card key={f.id}>
-              <div className="flex items-center gap-4">
-                <Avatar src={f.avatar} icon={<UserOutlined />} />
-                <div className="flex-1">
-                  <Link href={`/profile/${f.id}`} className="font-semibold hover:text-green-600">{f.name}</Link>
-                  {f.bio && <p className="text-sm text-gray-500">{f.bio}</p>}
-                </div>
-                {currentUserId && currentUserId !== f.id && (
-                  <Button size="small" type={f.isFollowing ? 'default' : 'primary'} onClick={() => handleFollow(f.id, f.isFollowing)}>
-                    {f.isFollowing ? 'Following' : 'Follow'}
-                  </Button>
-                )}
-              </div>
-            </Card>
-          ))}
-          {hasMore && <div className="text-center"><Button onClick={onLoadMore}>Load More</Button></div>}
-        </>
-      ) : (
-        <div className="text-center py-12 text-gray-500">No followers yet.</div>
-      )}
-    </div>
-  );
-}
-
-interface FollowingListProps extends TabProps { following: FollowUser[]; currentUserId?: string; }
-function FollowingList({ following, currentUserId, onLoadMore, hasMore }: FollowingListProps) {
-  const dispatch = useAppDispatch();
-  const handleUnfollow = async (userId: string) => {
-    try { await dispatch(unfollowUser(userId)).unwrap(); message.success('Unfollowed'); } catch { message.error('Failed'); }
-  };
-  return (
-    <div className="space-y-4">
-      {following.length ? (
-        <>
-          {following.map(f => (
-            <Card key={f.id}>
-              <div className="flex items-center gap-4">
-                <Avatar src={f.avatar} icon={<UserOutlined />} />
-                <div className="flex-1">
-                  <Link href={`/profile/${f.id}`} className="font-semibold hover:text-green-600">{f.name}</Link>
-                  {f.bio && <p className="text-sm text-gray-500">{f.bio}</p>}
-                </div>
-                {currentUserId && currentUserId !== f.id && (
-                  <Button size="small" type="default" onClick={() => handleUnfollow(f.id)}>Following</Button>
-                )}
-              </div>
-            </Card>
-          ))}
-          {hasMore && <div className="text-center"><Button onClick={onLoadMore}>Load More</Button></div>}
-        </>
-      ) : (
-        <div className="text-center py-12 text-gray-500">Not following anyone yet.</div>
-      )}
     </div>
   );
 }

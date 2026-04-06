@@ -1,8 +1,10 @@
 'use client';
 
+import { CommentItem } from './components/CommentItem';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { addComment, deleteComment, fetchComments } from '@/store/slices/commentSlice';
 import { deletePost, fetchPostById, likePost, updateCommentCount } from '@/store/slices/postSlice';
+import { normalizePost } from '@/components/posts/PostCard';
 import { Comment } from '@/types/comments';
 import { Post } from '@/types/posts';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -37,7 +39,6 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import 'react-quill/dist/quill.snow.css';
-import { CommentItem } from './components/CommentItem';
 
 const ReactQuill = dynamic(
   () => import('react-quill').then((mod) => mod.default),
@@ -46,56 +47,6 @@ const ReactQuill = dynamic(
     loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded" />
   }
 );
-
-// Post normalize function (unchanged)
-const normalizePost = (post: any): Post => {
-  let author = post.author;
-  if (!author && post.authorId) {
-    author = {
-      id: post.authorId,
-      name: post.authorName || 'Unknown Author',
-      avatar: post.authorAvatar || null
-    };
-  } else if (!author) {
-    author = {
-      id: 'unknown',
-      name: 'Unknown Author',
-      avatar: null
-    };
-  }
-
-  let tags: string[] = [];
-  if (post.tags) {
-    tags = post.tags.map((tag: any) => {
-      if (typeof tag === 'string') return tag;
-      if (tag && typeof tag === 'object') {
-        return tag.name || tag.slug || tag.id || String(tag);
-      }
-      return String(tag);
-    });
-  }
-
-  return {
-    id: post.id || '',
-    title: post.title || '',
-    content: post.content || '',
-    excerpt: post.excerpt || '',
-    authorId: post.authorId || author.id,
-    author: author,
-    tags: tags,
-    featuredImage: post.featuredImage || post.coverImage,
-    likes: post.likes || post.likesCount || 0,
-    likesCount: post.likesCount || post.likes || 0,
-    comments: post.comments || post.commentsCount || 0,
-    commentsCount: post.commentsCount || post.comments || 0,
-    readingTime: post.readingTime || Math.ceil((post.content?.length || 0) / 1000),
-    published: post.published || post.status === 'published',
-    status: post.status || (post.published ? 'published' : 'draft'),
-    createdAt: post.createdAt || new Date().toISOString(),
-    updatedAt: post.updatedAt || post.createdAt || new Date().toISOString(),
-    isLiked: post.isLiked || false
-  };
-};
 
 export default function PostDetailPage() {
   const params = useParams();

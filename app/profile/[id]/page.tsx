@@ -179,12 +179,13 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: `1px solid ${token.border}`, marginTop: profile.bio ? 0 : 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderTop: `1px solid ${token.border}`, marginTop: profile.bio ? 0 : 20 }}>
             {[
               { label: 'Posts',     value: totalPosts,     tab: 'posts' },
               { label: 'Followers', value: totalFollowers, tab: 'followers' },
               { label: 'Following', value: totalFollowing, tab: 'following' },
               { label: 'Likes',     value: totalLikes,     tab: 'likes' },
+              { label: 'Comments',  value: totalComments,  tab: 'comments' },
             ].map((s, i) => (
               <div
                 key={s.tab}

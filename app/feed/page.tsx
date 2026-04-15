@@ -190,9 +190,6 @@ export default function FeedPage() {
     if (!user) {
       message.warning('Please login to write a post');
       router.push('/login?redirect=/posts/create');
-    } else if (!user.verified) {
-      message.warning('Please verify your email before posting');
-      router.push('/verify-email');
     } else {
       router.push('/posts/create');
     }

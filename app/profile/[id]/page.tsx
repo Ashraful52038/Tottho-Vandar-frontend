@@ -71,9 +71,17 @@ export default function ProfilePage() {
   }, [followers, currentUser, isOwnProfile]);
 
   const handleFollow = async () => {
-    if (!currentUser) { router.push('/login'); return; }
+    if (!currentUser) 
+    { 
+      router.push('/login');
+      return; 
+    }
+
+    const previousState = isFollowing;
+    setIsFollowing(!previousState);
+
     try {
-      if (isFollowing) {
+      if (previousState) {
         await dispatch(unfollowUser(profileId)).unwrap();
         setIsFollowing(false);
         message.success('Unfollowed successfully');
@@ -82,7 +90,17 @@ export default function ProfilePage() {
         setIsFollowing(true);
         message.success('Followed successfully');
       }
-    } catch { message.error('Failed to update follow status'); }
+
+      await Promise.all([
+        dispatch(fetchProfile(profileId)),
+        dispatch(fetchFollowers({ userId: profileId, page: 1 })),
+        dispatch(fetchFollowing({ userId: profileId, page: 1 })),
+      ]);
+
+    } catch { 
+      setIsFollowing(previousState);
+      message.error('Failed to update follow status');
+    }
   };
 
   if (isLoading && !profile) {
@@ -179,7 +197,8 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderTop: `1px solid ${token.border}`, marginTop: profile.bio ? 0 : 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+            borderTop: `1px solid ${token.border}`, marginTop: profile.bio ? 0 : 20 }}>
             {[
               { label: 'Posts',     value: totalPosts,     tab: 'posts' },
               { label: 'Followers', value: totalFollowers, tab: 'followers' },
@@ -190,7 +209,8 @@ export default function ProfilePage() {
               <div
                 key={s.tab}
                 onClick={() => setActiveTab(s.tab)}
-                style={{ padding: '16px 12px', textAlign: 'center', cursor: 'pointer', background: token.surface2, transition: 'background .12s', borderRight: i < 3 ? `1px solid ${token.border}` : 'none' }}
+                style={{ padding: '16px 12px', textAlign: 'center', cursor: 'pointer', background: token.surface2,
+                  transition: 'background .12s', borderRight: i < 3 ? `1px solid ${token.border}` : 'none' }}
                 onMouseEnter={e => (e.currentTarget.style.background = token.accentPale)}
                 onMouseLeave={e => (e.currentTarget.style.background = token.surface2)}
               >

@@ -161,9 +161,10 @@ export default function PostCard({ post: originalPost }: PostCardProps) {
                 {post.author?.name?.charAt(0) || 'U'}
               </Avatar>
               <div className="ml-3">
-                <div className="font-bold text-black dark:text-gray-800 text-base">
+                <Link href={`/profile/${post.author?.id}`} className="font-bold text-black
+                dark:text-gray-800 text-base hover:text-green-600 dark:hover:text-green-400">
                   {post.author?.name || 'Unknown Author'}
-                </div>
+                </Link>
                 <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                   <Tooltip title={moment(post.createdAt).format('LLLL')}>
                     <ClockCircleOutlined className="mr-1" />

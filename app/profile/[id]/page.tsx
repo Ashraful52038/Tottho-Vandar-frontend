@@ -17,7 +17,6 @@ import {
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
-  CheckCircleFilled,
   EditOutlined,
   LoadingOutlined,
   MailOutlined,
@@ -175,7 +174,7 @@ export default function ProfilePage() {
             {/* Name */}
             <h1 style={{ fontSize: 24, fontWeight: 400, fontFamily: 'DM Serif Display, Georgia, serif', color: token.text, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               {profile.name}
-              {profile.verified && <CheckCircleFilled style={{ color: '#0ea5e9', fontSize: 18 }} />}
+              {/* {profile.verified && <CheckCircleFilled style={{ color: '#0ea5e9', fontSize: 18 }} />} */}
             </h1>
 
             {/* Meta */}

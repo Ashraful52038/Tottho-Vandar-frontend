@@ -164,7 +164,6 @@ export default function PostDetailPage() {
         parentId: replyTo?.id
       })).unwrap();
 
-      message.success('Comment added successfully');
       setCommentText('');
       setReplyTo(null);
       dispatch(updateCommentCount({ postId: params.id as string, delta: 1 }));

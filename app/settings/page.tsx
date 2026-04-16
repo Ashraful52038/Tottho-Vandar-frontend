@@ -3,15 +3,14 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { changePassword, forgetPassword } from '@/store/slices/authSlice';
 import {
-    ArrowLeftOutlined,
-    CheckCircleFilled,
-    KeyOutlined,
-    LockOutlined,
-    MailOutlined,
-    QuestionCircleOutlined,
-    SafetyOutlined,
-    SendOutlined,
-    UserOutlined,
+  ArrowLeftOutlined,
+  KeyOutlined,
+  LockOutlined,
+  MailOutlined,
+  QuestionCircleOutlined,
+  SafetyOutlined,
+  SendOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import { Avatar, message } from 'antd';
 import { useRouter } from 'next/navigation';
@@ -86,7 +85,7 @@ export default function SettingsPage() {
 
         {/* Profile Card */}
         <div className="bg-white rounded-2xl border border-[#e8e5df] overflow-hidden mb-5">
-          <div className="h-24 bg-gradient-to-r from-[#2d6a4f] via-[#40916c] to-[#74c69d]" />
+          <div className="h-24 bg-linear-to-r from-[#2d6a4f] via-[#40916c] to-[#74c69d]" />
           <div className="px-7 pb-6">
             <div className="flex items-end gap-5 -mt-11 mb-4">
               <Avatar
@@ -96,10 +95,10 @@ export default function SettingsPage() {
                 className="border-[3px] border-white shadow-md shrink-0"
                 style={{ background: '#d8f3dc', color: '#2d6a4f' }}
               />
-              <div className="pb-1">
+              <div className="pb-1 mt-20">
                 <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                   {user.name}
-                  {user.verified && <CheckCircleFilled className="text-sky-500 text-base" />}
+                  {/* {user.verified && <CheckCircleFilled className="text-sky-500 text-base" />} */}
                 </h2>
                 <p className="text-sm text-gray-400 mt-0.5">{user.email}</p>
               </div>

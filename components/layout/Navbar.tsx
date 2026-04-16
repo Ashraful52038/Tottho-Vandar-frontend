@@ -19,7 +19,7 @@ import {
 } from '@ant-design/icons';
 import { Avatar, Badge, Button, Drawer, Dropdown, Input, MenuProps, message } from 'antd';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface NavbarProps {
@@ -45,6 +45,7 @@ export default function Navbar({ onSearch, searchQuery = '',tags = [], onTagSele
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   
   // State declarations
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -281,7 +282,13 @@ export default function Navbar({ onSearch, searchQuery = '',tags = [], onTagSele
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href={pathname === '/profile/edit' ? '#' : '/'} 
+              onClick={(e) => {
+                if (pathname === '/profile/edit') {
+                  e.preventDefault();
+                  return;
+                }
+              }}className="flex items-center space-x-2">
               <GlobalOutlined style={{ fontSize: '24px' }} className="logo-color" />
               <span className="text-xl sm:text-2xl font-serif font-bold logo-color truncate max-w-37.5 sm:max-w-full">
                 Tottho Vandar

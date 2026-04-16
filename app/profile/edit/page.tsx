@@ -21,10 +21,18 @@ export default function EditProfilePage() {
   const [nameError, setNameError] = useState('');
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
+    console.log('EditProfilePage mounted, current path:', window.location.pathname);
+    console.log('User:', user)
+    if (!user && !loading) { 
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
     setName(user.name || '');
     setBio(user.bio || '');
-  }, [user, router]);
+    }
+  }, [user, router, loading]);
 
   const onSubmit = async () => {
     if (!name.trim()) { setNameError('Name is required'); return; }
@@ -56,14 +64,21 @@ export default function EditProfilePage() {
     }
   };
 
-  if (!user) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f4f0]">
-      <LoadingOutlined className="text-4xl text-green-700" spin />
-    </div>
-  );
+  if (!user) {
+    return (
+      <>
+        {/* <Navbar /> */}
+        <div className="min-h-screen flex items-center justify-center bg-[#f5f4f0]">
+          <LoadingOutlined className="text-4xl text-green-700" spin />
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f4f0] py-6 px-4">
+      {/* Navbar at the top */}
+      {/* <Navbar /> */}
       <div className="max-w-xl mx-auto">
 
         {/* Back */}
@@ -96,13 +111,14 @@ export default function EditProfilePage() {
                   beforeUpload={(file) => { handleAvatarUpload(file); return false; }}
                   accept="image/*"
                 >
-                  <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-green-700 border-2 border-white flex items-center justify-center text-white text-xs hover:bg-green-800 transition-colors">
+                  <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-green-700 border-2
+                  border-white flex items-center justify-center text-white text-xs hover:bg-green-800 transition-colors">
                     {uploading ? <LoadingOutlined /> : <CameraOutlined />}
                   </button>
                 </Upload>
               </div>
               <div className="pb-1">
-                <p className="font-semibold text-gray-800">{user.name}</p>
+                <p className="font-semibold text-gray-800 mt-13">{user.name}</p>
                 <p className="text-xs text-gray-400 mt-0.5">Click camera to change photo</p>
               </div>
             </div>

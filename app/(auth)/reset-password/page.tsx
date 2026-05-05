@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
       router.push('/?openLogin=true');
       
     } catch (error: any) {
-      console.error('Reset password error:', error);
+      // Error handled by Redux state
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import PostEditor from '@/components/posts/PostEditor';
 import { postService } from '@/lib/api/posts';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { createPost, fetchTags } from '@/store/slices/postSlice';

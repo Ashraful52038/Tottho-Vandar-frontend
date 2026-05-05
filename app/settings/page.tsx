@@ -2,6 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { changePassword, forgetPassword } from '@/store/slices/authSlice';
+import { getFullImageUrl } from '@/utils/imageUtils';
 import {
   ArrowLeftOutlined,
   KeyOutlined,
@@ -90,7 +91,7 @@ export default function SettingsPage() {
             <div className="flex items-end gap-5 -mt-11 mb-4">
               <Avatar
                 size={84}
-                src={user.avatar}
+                src={getFullImageUrl(user.avatar)}
                 icon={<UserOutlined />}
                 className="border-[3px] border-white shadow-md shrink-0"
                 style={{ background: '#d8f3dc', color: '#2d6a4f' }}

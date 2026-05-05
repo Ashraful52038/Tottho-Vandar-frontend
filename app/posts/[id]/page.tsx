@@ -310,7 +310,7 @@ export default function PostDetailPage() {
             <div className="flex items-center mb-6">
               <Avatar 
                 icon={<UserOutlined />} 
-                src={post.author?.avatar}
+                src={user?.avatar ? getFullImageUrl(user.avatar) : undefined}
                 size={64}
                 className="border-2 border-green-500 shadow-md"
               >
@@ -412,7 +412,7 @@ export default function PostDetailPage() {
               )}
               <div className="flex gap-3">
                 <Avatar 
-                  src={user.avatar} 
+                  src={getFullImageUrl(user.avatar)} 
                   icon={<UserOutlined />}
                   size={40}
                 >

@@ -154,7 +154,7 @@ export default function PostCard({ post: originalPost }: PostCardProps) {
             <div className="flex items-center mb-4">
               <Avatar 
                 icon={<UserOutlined />} 
-                src={post.author?.avatar}
+                src={getFullImageUrl(post.author?.avatar)}
                 size={48}
                 className="border-2 border-green-500 dark:border-green-400 shadow-md"
               >

@@ -3,7 +3,7 @@
 import { userService } from '@/lib/api/user';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { updateUser } from '@/store/slices/authSlice';
-import type { User } from '@/types/user';
+import { getFullImageUrl } from '@/utils/imageUtils';
 import { ArrowLeftOutlined, CameraOutlined, LoadingOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Upload, message } from 'antd';
 import { useRouter } from 'next/navigation';
@@ -50,19 +50,46 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleAvatarUpload = async (file: File) => {
-    if (!user) return;
-    setUploading(true);
-    try {
-      const { avatarUrl } = await userService.uploadAvatar(file);
-      dispatch(updateUser({ ...user, avatar: avatarUrl } as User));
+  const handleAvatarUpload = async (file: any) => {
+  if (!user) return false;
+  
+  console.log('Raw file from Upload:', file); // ডিবাগিং এর জন্য
+  
+  // আসল ফাইল অবজেক্ট বের করুন
+  const actualFile = file.originFileObj || file;
+  
+  console.log('Actual file:', actualFile.name, actualFile.type, actualFile.size); // ডিবাগিং এর জন্য
+  
+  // ফাইল সাইজ চেক করুন (যেমন 5MB এর বেশি নয়)
+  if (actualFile.size > 5 * 1024 * 1024) {
+    message.error('Image size should be less than 5MB');
+    return false;
+  }
+  if (!actualFile.type.startsWith('image/')) {
+    message.error('Please upload an image file');
+    return false;
+  }
+  
+  setUploading(true);
+  try {
+    const response = await userService.uploadAvatar(actualFile);
+    console.log('Upload response:', response);
+    
+    if (response && response.avatarUrl) {
+      const updatedUser = { ...user, avatar: response.avatarUrl };
+      dispatch(updateUser(updatedUser));
       message.success('Avatar updated!');
-    } catch {
-      message.error('Failed to upload avatar');
-    } finally {
-      setUploading(false);
+    } else {
+      message.error('Invalid response from server');
     }
-  };
+  } catch (error: any) {
+    message.error(error.response?.data?.message || 'Failed to upload avatar');
+  } finally {
+    setUploading(false);
+  }
+  
+  return false;
+};
 
   if (!user) {
     return (
@@ -101,14 +128,14 @@ export default function EditProfilePage() {
               <div className="relative shrink-0">
                 <Avatar
                   size={84}
-                  src={user.avatar}
+                  src={getFullImageUrl(user.avatar)}
                   icon={<UserOutlined />}
                   className="border-[3px] border-white shadow-md"
                   style={{ background: '#d8f3dc', color: '#2d6a4f' }}
                 />
                 <Upload
                   showUploadList={false}
-                  beforeUpload={(file) => { handleAvatarUpload(file); return false; }}
+                  beforeUpload={handleAvatarUpload}
                   accept="image/*"
                 >
                   <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-green-700 border-2

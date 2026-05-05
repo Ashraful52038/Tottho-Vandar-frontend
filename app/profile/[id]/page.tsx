@@ -14,6 +14,7 @@ import {
   resetPosts,
   unfollowUser,
 } from '@/store/slices/profileSlice';
+import { getFullImageUrl } from '@/utils/imageUtils';
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
@@ -154,7 +155,7 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -36, marginBottom: 16 }}>
               <Avatar
                 size={80}
-                src={profile.avatar}
+                src={getFullImageUrl(profile.avatar)}
                 icon={<UserOutlined />}
                 style={{ border: `3px solid ${token.surface}`, background: token.accentLight, color: token.accent, flexShrink: 0, boxShadow: '0 2px 12px rgba(0,0,0,.1)' }}
               />

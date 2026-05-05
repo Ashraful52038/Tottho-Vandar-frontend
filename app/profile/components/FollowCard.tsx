@@ -1,4 +1,5 @@
 import { FollowUser } from "@/lib/api/user";
+import { getFullImageUrl } from "@/utils/imageUtils";
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar } from "antd";
 import Link from "next/link";
@@ -14,7 +15,7 @@ export function FollowCard({ user, currentUserId, onToggle }: { user: FollowUser
       onMouseLeave={e => (e.currentTarget.style.borderColor = token.border)}
     >
       <Avatar
-        size={44} src={user.avatar} icon={<UserOutlined />}
+        size={44} src={getFullImageUrl(user.avatar)} icon={<UserOutlined />}
         style={{ background: token.accentLight, color: token.accent, flexShrink: 0 }}
       />
       <div style={{ flex: 1 }}>

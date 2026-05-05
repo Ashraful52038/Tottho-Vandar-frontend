@@ -5,6 +5,7 @@ import SignupModal from '@/app/(auth)/signup/page';
 import { useAppDispatch, useAppSelector } from '@/store/hooks/reduxHooks';
 import { logout } from '@/store/slices/authSlice';
 import { Tag as TagType } from '@/types/tags';
+import { getFullImageUrl } from '@/utils/imageUtils';
 import {
   BellOutlined,
   EditOutlined,
@@ -356,7 +357,7 @@ export default function Navbar({ onSearch, searchQuery = '',tags = [], onTagSele
                   >
                     <div className="cursor-pointer flex items-center gap-2">
                       <Avatar 
-                        src={user.avatar} 
+                        src={getFullImageUrl(user.avatar)} 
                         icon={<UserOutlined />}
                         className="border-2 border-custom hover:border-green-500 transition-colors"
                         size={40}
